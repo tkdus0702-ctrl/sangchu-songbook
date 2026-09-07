@@ -445,7 +445,7 @@ export default function Home() {
                   </h1>
 
                   <p className="mt-0.5 text-xs text-[#a18d7e]">
-                    나만의 노래와 코드를 모아두는 곳
+                    SOOP 버츄얼 스트리머 유상츄의 노래책
                   </p>
                 </div>
               </div>
