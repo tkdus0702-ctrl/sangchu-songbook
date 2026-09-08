@@ -796,10 +796,9 @@ async function searchYouTube(
   title: string,
   artist: string
 ) {
-const youtubeKeys = [
-  process.env.YOUTUBE_API_KEY,
-  process.env.YOUTUBE_API_KEY_2,
-].filter(Boolean) as string[];
+  const apiKey =
+    process.env.YOUTUBE_API_KEY;
+
   if (!apiKey) {
     console.log(
       "YOUTUBE_API_KEY 없음"
