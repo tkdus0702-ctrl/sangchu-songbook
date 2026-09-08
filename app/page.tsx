@@ -1547,8 +1547,8 @@ const handleDeleteCover = async (
                   <div
                     className={
                       viewMode ===
-                      "grid"
-                        ? "min-w-0 flex-1 p-4 pr-20"
+"grid"
+  ? "min-w-0 flex-1 p-4"
                         : "min-w-0 flex-1"
                     }
                   >
@@ -1635,65 +1635,68 @@ const handleDeleteCover = async (
                   </div>
 
                   {/* 좋아요 */}
-                  <button
-                    onClick={() =>
-                      handleLike(
-                        song.id
-                      )
-                    }
-                    className={
-                      "absolute right-4 top-1/2 flex -translate-y-1/2 flex-col items-center justify-center rounded-2xl px-3 py-2 transition " +
-                      (isLiked
-                        ? "bg-[#fff4f0]"
-                        : "bg-transparent hover:bg-[#fffaf5]")
-                    }
-                    aria-label={
-                      isLiked
-                        ? "좋아요 취소"
-                        : "좋아요"
-                    }
-                  >
-                    <span
-                      className={
-                        "transition-transform duration-300 " +
-                        (isAnimating
-                          ? "scale-125"
-                          : "scale-100")
-                      }
-                    >
-                      <svg
-                        width="28"
-                        height="28"
-                        viewBox="0 0 24 24"
-                        fill={
-                          isLiked
-                            ? "#e88b7d"
-                            : "none"
-                        }
-                        stroke={
-                          isLiked
-                            ? "#e88b7d"
-                            : "#b8a99e"
-                        }
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M20.8 8.7c0 5.2-8.8 10.1-8.8 10.1S3.2 13.9 3.2 8.7C3.2 5.8 5.3 4 7.8 4c1.5 0 2.9.7 4.2 2 1.3-1.3 2.7-2 4.2-2 2.5 0 4.6 1.8 4.6 4.7Z" />
-                      </svg>
-                    </span>
+<button
+  onClick={() =>
+    handleLike(song.id)
+  }
+  className={
+    viewMode === "grid"
+      ? "absolute bottom-11 right-2 flex flex-col items-center justify-center rounded-2xl px-3 py-2 transition " +
+        (isLiked
+          ? "bg-[#fff4f0]"
+          : "bg-transparent hover:bg-[#fffaf5]")
+      : "absolute right-4 top-1/2 flex -translate-y-1/2 flex-col items-center justify-center rounded-2xl px-3 py-2 transition " +
+        (isLiked
+          ? "bg-[#fff4f0]"
+          : "bg-transparent hover:bg-[#fffaf5]")
+  }
+  aria-label={
+    isLiked
+      ? "좋아요 취소"
+      : "좋아요"
+  }
+>
+  <span
+    className={
+      "transition-transform duration-300 " +
+      (isAnimating
+        ? "scale-125"
+        : "scale-100")
+    }
+  >
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill={
+        isLiked
+          ? "#e88b7d"
+          : "none"
+      }
+      stroke={
+        isLiked
+          ? "#e88b7d"
+          : "#b8a99e"
+      }
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M20.8 8.7c0 5.2-8.8 10.1-8.8 10.1S3.2 13.9 3.2 8.7C3.2 5.8 5.3 4 7.8 4c1.5 0 2.9.7 4.2 2 1.3-1.3 2.7-2 4.2-2 2.5 0 4.6 1.8 4.6 4.7Z" />
+    </svg>
+  </span>
 
-                    <span
-                      className={
-                        "mt-0.5 text-xs font-semibold " +
-                        (isLiked
-                          ? "text-[#e88b7d]"
-                          : "text-[#b8a99e]")
-                      }
-                    >
-                      {likes}
-                    </span>
-                  </button>
+  <span
+    className={
+      "mt-0.5 text-xs font-semibold " +
+      (isLiked
+        ? "text-[#e88b7d]"
+        : "text-[#b8a99e]")
+    }
+  >
+    {likes}
+  </span>
+</button>
                 </div>
               );
             }
