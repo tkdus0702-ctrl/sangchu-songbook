@@ -1482,7 +1482,7 @@ const handleDeleteCover = async (
                   className={
                     viewMode === "grid"
                       ? "group relative flex min-h-[360px] w-full flex-col overflow-hidden rounded-2xl border border-[#eadfd5] bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-[#cdbbab] hover:shadow-md"
-                      : "group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-[#eadfd5] bg-white p-4 pr-40 shadow-sm transition hover:-translate-y-0.5 hover:border-[#cdbbab] hover:shadow-md"
+                      : "group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-[#eadfd5] bg-white p-4 pr-20 shadow-sm transition hover:-translate-y-0.5 hover:border-[#cdbbab] hover:shadow-md"
                   }
                 >
                   {/* 블럭형 커버 */}
@@ -1552,11 +1552,11 @@ const handleDeleteCover = async (
                         : "min-w-0 flex-1"
                     }
                   >
-                    <h3 className="font-bold whitespace-normal break-words">
+                    <h3 className="font-bold whitespace-nowrap">
                       {song.title}
                     </h3>
 
-                    <p className="mt-1 truncate text-sm text-[#9a887b]">
+                    <p className="whitespace-normal break-words leading-snug text-[#9a887b]">
                       {song.artist}
                     </p>
 
