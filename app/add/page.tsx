@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -10,7 +9,6 @@ export default function AddSongPage() {
 
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
-  const [key, setKey] = useState("");
   const [level, setLevel] = useState("");
   const [category, setCategory] = useState("");
   const [difficulty, setDifficulty] = useState<number | null>(null);
@@ -19,7 +17,7 @@ export default function AddSongPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!title || !artist) {
+    if (!title.trim() || !artist.trim()) {
       alert("노래 제목과 아티스트를 입력해주세요.");
       return;
     }
@@ -33,9 +31,8 @@ export default function AddSongPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          title,
-          artist,
-          key,
+          title: title.trim(),
+          artist: artist.trim(),
           level,
           category,
           difficulty,
@@ -44,15 +41,22 @@ export default function AddSongPage() {
 
       const result = await response.json();
 
-      if (!response.ok || !result.success) {
-        alert(result.message || "노래 저장에 실패했습니다.");
+      console.log("노래 추가 결과:", result);
+
+      if (!response.ok) {
+        alert(
+          result.error ||
+            result.message ||
+            "노래 저장에 실패했습니다."
+        );
         return;
       }
 
       alert("노래가 저장되었습니다!");
       router.push("/");
+      router.refresh();
     } catch (error) {
-      console.error(error);
+      console.error("노래 저장 오류:", error);
       alert("노래 저장 중 오류가 발생했습니다.");
     } finally {
       setSaving(false);
@@ -184,22 +188,10 @@ export default function AddSongPage() {
 
               <p className="mt-2 text-xs text-[#9a887b]">
                 현재 난이도:{" "}
-                {difficulty === null ? "선택 안 함" : difficulty + " / 5"}
+                {difficulty === null
+                  ? "선택 안 함"
+                  : difficulty + " / 5"}
               </p>
-            </div>
-
-            {/* Key */}
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
-                Key
-              </label>
-
-              <input
-                value={key}
-                onChange={(e) => setKey(e.target.value)}
-                placeholder="예: B minor"
-                className="w-full rounded-xl border border-[#eadfd5] px-4 py-3 outline-none focus:border-[#8b6f5c] focus:ring-2 focus:ring-[#8b6f5c]/10"
-              />
             </div>
 
             {/* 버튼 */}
