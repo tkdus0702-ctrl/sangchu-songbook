@@ -1552,7 +1552,7 @@ const handleDeleteCover = async (
                         : "min-w-0 flex-1"
                     }
                   >
-                    <h3 className="truncate font-semibold group-hover:text-[#8b6f5c]">
+                    <h3 className="font-bold whitespace-normal break-words">
                       {song.title}
                     </h3>
 
