@@ -971,15 +971,17 @@ const handleDeleteCover = async (
             }
             className="group text-left"
           >
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-10 items-center justify-center rounded-2xl bg-[#5b9877] text-lg text-white shadow-sm ring-4 ring-[#e3efe7]">
-              <img src="/overlay/mojongi.png" alt="모종이 팬캐릭터" />
-              </span>
-
+           <div className="flex items-center gap-0">
+  <img
+    src="/overlay/sangchu2.png"
+    alt="유상츄"
+    className="h-15 w-22 rounded-full object-contain"
+  />
               <div>
-                <h1 className="text-xl font-extrabold tracking-tight text-[#263c32]">
-                  유상츄 노래책 <span className="text-[#9b85d2]">🌱</span>
-                </h1>
+         <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#315b49]">
+  유상츄 노래책  🎙️
+
+</h1>
 
                 <p className="mt-0.5 text-xs text-[#718f7e]">
                   SOOP 버츄얼 스트리머 유상츄의 노래책 ♫

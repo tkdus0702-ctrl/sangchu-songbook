@@ -60,18 +60,6 @@ export default function QueueOverlayPage() {
 
   return (
     <main className="overlay-stage">
-      <span className="decor decor-star star-a" aria-hidden="true">
-        ✦
-      </span>
-      <span className="decor decor-star star-b" aria-hidden="true">
-        ✧
-      </span>
-      <span className="decor decor-note note-a" aria-hidden="true">
-        ♫
-      </span>
-      <span className="decor decor-note note-b" aria-hidden="true">
-        ♪
-      </span>
 
       <section className="queue-panel" aria-label="유상츄 노래 Queue">
         <header className="brand-header">
@@ -81,14 +69,28 @@ export default function QueueOverlayPage() {
               SANGCHU PLAY QUEUE
             </div>
 
-            <h1>
-              유상츄 노래 대기열 <span>✦</span>
-            </h1>
+<h1 className="queue-title">
+  <span className="queue-title-text">유상츄 노래 대기열</span>
+<img
+  src="/overlay/title.svg"
+  alt="로고"
+  width={28}
+  height={28}
+  className="queue-title-logo"
+/>
+</h1>
           </div>
 
-          <div className="mascot-frame">
-            <img src="/overlay/mojongi.png" alt="모종이 팬캐릭터" />
-          </div>
+        <div className="mascot-frame">
+<div className="mascot-frame">
+  <img
+    src="/overlay/sangchu2.png"
+    alt="유상츄"
+    width={120}
+    height={150}
+  />
+</div>
+</div>
         </header>
 
         <div className="stats-row" aria-label="Queue 통계">
@@ -98,7 +100,7 @@ export default function QueueOverlayPage() {
           </div>
 
           <div className="stat-pill">
-            <span>✦</span>
+            <span>✔</span>
             <b>완료 {data.completedCount}곡</b>
           </div>
 
@@ -118,7 +120,7 @@ export default function QueueOverlayPage() {
             </div>
 
             <span className="heading-star" aria-hidden="true">
-              ✧
+              
             </span>
           </div>
 
@@ -179,7 +181,7 @@ export default function QueueOverlayPage() {
           </div>
 
           <span className="footer-star" aria-hidden="true">
-            ✦
+            
           </span>
         </footer>
       </section>
@@ -229,7 +231,7 @@ export default function QueueOverlayPage() {
           z-index: 1;
           width: 100%;
           max-width: 520px;
-          padding: 22px;
+          padding: 8px 22px 22px;
           overflow: hidden;
           border: 1px solid rgba(255, 255, 255, 0.32);
           border-radius: 26px;
@@ -246,7 +248,7 @@ export default function QueueOverlayPage() {
           align-items: center;
           justify-content: space-between;
           gap: 12px;
-          margin-bottom: 20px;
+          margin-bottom: 0px;
         }
 
         .brand-copy {
@@ -274,40 +276,58 @@ export default function QueueOverlayPage() {
           box-shadow: 0 0 10px rgba(168, 244, 194, 0.7);
         }
 
-        .brand-header h1 {
-          margin: 0;
-          color: #fffdf8;
-          font-size: clamp(20px, 4vw, 26px);
-          font-weight: 850;
-          letter-spacing: -1.1px;
-          line-height: 1.35;
-          text-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-        }
+.brand-header h1.queue-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 850;
+  letter-spacing: -1.1px;
+  line-height: 1.35;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
 
-        .brand-header h1 span {
-          color: var(--gold);
-          font-size: 17px;
-        }
+.brand-header h1.queue-title .queue-title-text {
+  color: #ffffff;
+  font-size: inherit;
+  font-weight: inherit;
+  white-space: nowrap;
+}
 
-        .mascot-frame {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 68px;
-          height: 68px;
-          flex-shrink: 0;
-          overflow: hidden;
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          border-radius: 22px;
-          background: rgba(255, 255, 255, 0.13);
-        }
+.brand-header h1.queue-title .queue-title-logo {
+  display: block;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
 
-        .mascot-frame img {
-          display: block;
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
+.mascot-frame {
+  width: 120px;
+  height: 150px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.mascot-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+
+  transform: translateY(-65px);
+}
 
         .stats-row {
           display: grid;
@@ -618,11 +638,11 @@ export default function QueueOverlayPage() {
 
         @media (max-width: 400px) {
           .overlay-stage {
-            padding: 10px;
+            padding: 5px;
           }
 
           .queue-panel {
-            padding: 15px;
+            padding: 12px 25px 25px;
             border-radius: 21px;
           }
 

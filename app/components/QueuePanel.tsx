@@ -552,9 +552,16 @@ return (
         <p className="text-xs font-semibold tracking-[0.18em] text-[#789786]">
           SANGCHU PLAY QUEUE
         </p>
-        <h2 className="mt-1 text-xl font-bold text-[#789d64]">
-          ♣ 유상츄 노래 대기열
-        </h2>
+<h2 className="mt-1 flex items-center gap-2 text-xl font-bold text-[#789d64]">
+  유상츄 노래 대기열
+  <img
+    src="/overlay/title.svg"
+    alt="로고"
+    width={28}
+    height={28}
+    className="queue-title-logo"
+  />
+</h2>
       </div>
 
       <div className="flex gap-2">

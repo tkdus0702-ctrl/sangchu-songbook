@@ -67,7 +67,7 @@ export default function QueueOverlayPage() {
         <header className="brand-header">
           <div className="brand-copy">
             <div className="eyebrow"><span className="eyebrow-dot" /> SANGCHU PLAY QUEUE</div>
-            <h1>유상츄 노래 대기열 <span className="tiny-sprout">♣</span></h1>
+            <h1>유상츄 노래 대기열 <span className="text-5xl">>♣</span></h1>
           </div>
           <div className="mascot-frame">
             <img src="/overlay/mojongi.png" alt="모종이 팬캐릭터" />
