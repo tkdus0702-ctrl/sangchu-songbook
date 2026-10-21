@@ -23,12 +23,11 @@ export default function Home() {
 
   const [isAdmin, setIsAdmin] = useState(false);
 
-// Queue에 추가할 노래 선택
-const [selectedQueueSongIds, setSelectedQueueSongIds] =
-  useState<number[]>([]);
-
-const [addingSelectedSongs, setAddingSelectedSongs] =
-  useState(false);
+// 노래별 Queue 추가 / 방문자 요청 처리 상태
+const [processingSongIds, setProcessingSongIds] =
+  useState<Record<number, boolean>>({});
+const [requestedSongIds, setRequestedSongIds] =
+  useState<Record<number, boolean>>({});
 
   // 보기 방식
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -109,79 +108,83 @@ const [addingSelectedSongs, setAddingSelectedSongs] =
     }
   };
 
-  // 노래 선택/해제
-  const toggleQueueSongSelection = (songId: number) => {
-    setSelectedQueueSongIds((current) =>
-      current.includes(songId)
-        ? current.filter((id) => id !== songId)
-        : [...current, songId]
-    );
-  };
+  // 앨범 커버 버튼: 관리자면 Queue 추가, 방문자면 요청 등록
+  const handleSongQueueAction = async (song: any) => {
+    if (processingSongIds[song.id]) return;
 
-  // 선택한 노래들을 Queue에 추가
-  const handleAddSelectedSongsToQueue = async () => {
-    if (!isAdmin || addingSelectedSongs) return;
-
-    const selectedSongs = songs.filter((song) =>
-      selectedQueueSongIds.includes(song.id)
-    );
-
-    if (selectedSongs.length === 0) {
-      alert("Queue에 추가할 노래를 선택해주세요.");
+    if (!isAdmin && !userId) {
+      alert("잠시 후 다시 시도해주세요.");
       return;
     }
 
-    setAddingSelectedSongs(true);
-
-    let added = 0;
-    let skipped = 0;
-    let failed = 0;
+    setProcessingSongIds((current) => ({ ...current, [song.id]: true }));
 
     try {
-      for (const song of selectedSongs) {
-        try {
-          const response = await fetch("/api/queue", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              song_id: String(song.id),
-              title: song.title,
-              artist: song.artist,
-              key: song.key,
-              level: song.level,
-              category: song.category,
-              difficulty: song.difficulty,
-            }),
-          });
+      if (isAdmin) {
+        const response = await fetch("/api/queue", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            song_id: String(song.id),
+            title: song.title,
+            artist: song.artist,
+            key: song.key,
+            level: song.level,
+            category: song.category,
+            difficulty: song.difficulty,
+          }),
+        });
 
-          if (response.ok) {
-            added++;
-          } else if (response.status === 409) {
-            // 이미 진행 중인 Queue에 있는 노래
-            skipped++;
-          } else {
-            failed++;
-          }
-        } catch {
-          failed++;
+        const result = await response.json().catch(() => ({}));
+
+        if (response.status === 409) {
+          alert("이미 Queue에 있는 노래예요.");
+          return;
         }
+
+        if (!response.ok) {
+          alert(result.message || result.error || "Queue 추가에 실패했습니다.");
+          return;
+        }
+
+        window.dispatchEvent(new Event("queue-refresh"));
+        alert(`「${song.title}」 노래를 Queue에 추가했어요.`);
+        return;
       }
 
-      setSelectedQueueSongIds([]);
+      const response = await fetch("/api/song-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          song_id: String(song.id),
+          title: song.title,
+          artist: song.artist,
+          key: song.key,
+          level: song.level,
+          category: song.category,
+          difficulty: song.difficulty,
+          requester_id: userId,
+        }),
+      });
 
-      alert(
-        `Queue 추가 완료!\n\n` +
-          `추가: ${added}곡\n` +
-          `이미 Queue에 있음: ${skipped}곡\n` +
-          `실패: ${failed}곡`
-      );
+      const result = await response.json().catch(() => ({}));
 
-      // Queue 영역을 새로고침할 수 있도록 이벤트 발생
-      window.dispatchEvent(new Event("queue-refresh"));
+      if (response.ok || response.status === 409) {
+        setRequestedSongIds((current) => ({ ...current, [song.id]: true }));
+        alert(
+          response.status === 409
+            ? "이미 요청 대기 중인 노래예요."
+            : "노래 요청을 보냈어요! 관리자에게 전달됐습니다."
+        );
+        return;
+      }
+
+      alert(result.message || "요청 등록에 실패했습니다.");
+    } catch (error) {
+      console.error(error);
+      alert("처리 중 오류가 발생했습니다.");
     } finally {
-      setAddingSelectedSongs(false);
+      setProcessingSongIds((current) => ({ ...current, [song.id]: false }));
     }
   };
 
@@ -1539,54 +1542,9 @@ const handleDeleteCover = async (
           </div>
         )}
 
-  {/* 선택한 노래 Queue 추가 */}
-  {isAdmin && (
-    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#eadfd5] bg-white p-4">
-      <div>
-        <p className="font-semibold text-[#6f5140]">
-          Queue에 추가할 노래 선택
-        </p>
-        <p className="mt-1 text-sm text-[#9a887b]">
-          {selectedQueueSongIds.length}곡 선택됨
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() =>
-            setSelectedQueueSongIds((current) =>
-              current.length === sortedSongs.length
-                ? []
-                : sortedSongs.map((song) => song.id)
-            )
-          }
-          className="rounded-xl border border-[#e7d9ce] px-4 py-2 text-sm text-[#8b6f5c] hover:bg-[#f8f1eb]"
-        >
-          {sortedSongs.length > 0 &&
-          sortedSongs.every((song) =>
-            selectedQueueSongIds.includes(song.id)
-          )
-            ? "현재 목록 선택 해제"
-            : "현재 목록 전체 선택"}
-        </button>
-
-        <button
-          onClick={handleAddSelectedSongsToQueue}
-          disabled={
-            selectedQueueSongIds.length === 0 ||
-            addingSelectedSongs
-          }
-          className="rounded-xl bg-[#8b6f5c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#725846] disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {addingSelectedSongs
-            ? "추가 중..."
-            : `선택한 ${selectedQueueSongIds.length}곡 Queue에 추가`}
-        </button>
-      </div>
-    </div>
-  )}
-
   {/* 노래 목록 */}
+
+
 
         {/* 노래 목록 */}
         <div
@@ -1621,24 +1579,27 @@ const handleDeleteCover = async (
                       : "group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-[#eadfd5] bg-white p-4 pr-20 shadow-sm transition hover:-translate-y-0.5 hover:border-[#cdbbab] hover:shadow-md"
                   }
                 >
-                  {isAdmin && (
-                    <label
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute left-3 top-3 z-20 flex cursor-pointer items-center gap-2 rounded-lg border border-[#eadfd5] bg-white/95 px-3 py-2 text-sm font-medium text-[#8b6f5c] shadow-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedQueueSongIds.includes(song.id)}
-                        onChange={() => toggleQueueSongSelection(song.id)}
-                        className="h-4 w-4 accent-[#8b6f5c]"
-                      />
-                      선택
-                    </label>
-                  )}
                   {/* 블럭형 커버 */}
                   {viewMode ===
                     "grid" && (
                     <div className="relative aspect-square w-full overflow-hidden bg-[#f7f1ec]">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleSongQueueAction(song);
+                        }}
+                        disabled={!!processingSongIds[song.id] || (!isAdmin && (!userId || !!requestedSongIds[song.id]))}
+                        className="absolute left-2 top-2 z-20 rounded-lg border border-white/70 bg-white/95 px-3 py-2 text-xs font-bold text-[#8b6f5c] shadow-md transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+                      >
+                        {processingSongIds[song.id]
+                          ? "처리 중..."
+                          : isAdmin
+                            ? "+ Queue 추가"
+                            : requestedSongIds[song.id]
+                              ? "✓ 요청 완료"
+                              : "🎤 요청"}
+                      </button>
                       {song.cover_url ? (
                         <img
                           src={
@@ -1670,7 +1631,25 @@ const handleDeleteCover = async (
                   {/* 리스트형 커버 */}
                   {viewMode ===
                     "list" && (
-                    <div className="mr-4 h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#f7f1ec]">
+                    <div className="relative mr-4 h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#f7f1ec]">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleSongQueueAction(song);
+                        }}
+                        disabled={!!processingSongIds[song.id] || (!isAdmin && (!userId || !!requestedSongIds[song.id]))}
+                        aria-label={isAdmin ? `${song.title} Queue 추가` : `${song.title} 요청`}
+                        className="absolute inset-x-0 top-0 z-20 bg-white/95 px-1 py-1.5 text-[10px] font-bold leading-tight text-[#8b6f5c] shadow-sm disabled:opacity-70"
+                      >
+                        {processingSongIds[song.id]
+                          ? "처리 중"
+                          : isAdmin
+                            ? "+ 추가"
+                            : requestedSongIds[song.id]
+                              ? "✓ 요청됨"
+                              : "🎤 요청"}
+                      </button>
                       {song.cover_url ? (
                         <img
                           src={

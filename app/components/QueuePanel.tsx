@@ -2,7 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-
+import SongRequestPanel from "@/app/components/SongRequestPanel";
 type Song = {
   id: string | number;
   title: string;
@@ -529,7 +529,8 @@ return (
           )}
         </div>
       )}
-
+{/* 요청 대기 목록: Queue 카드 내부 */}
+<SongRequestPanel isAdmin={isAdmin} />
       {isAdmin && busy && (
         <p className="mt-3 text-right text-xs text-[#9a887b]">
           변경사항을 처리하고 있어요...
