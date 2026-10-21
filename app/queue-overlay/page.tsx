@@ -1,18 +1,16 @@
+
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type QueueSong = {
-  id: number;
-  song_id: string;
+  id: number | string;
   title: string;
   artist: string;
-  song_key: string | null;
-  level: string | null;
-  category: string | null;
-  difficulty: number | null;
-  position: number;
-  completed: boolean;
+  song_key?: string | null;
+  level?: string | null;
+  category?: string | null;
+  difficulty?: number | null;
 };
 
 type OverlayData = {
@@ -24,102 +22,635 @@ type OverlayData = {
 };
 
 export default function QueueOverlayPage() {
-  const [data, setData] = useState<OverlayData | null>(null);
-  const [error, setError] = useState(false);
-
-  const refresh = useCallback(async () => {
-    try {
-      const response = await fetch("/api/queue-overlay", { cache: "no-store" });
-      const result = await response.json();
-      if (!response.ok || !result.success) throw new Error("overlay fetch failed");
-      setData(result);
-      setError(false);
-    } catch {
-      setError(true);
-    }
-  }, []);
+  const [data, setData] = useState<OverlayData>({
+    success: false,
+    queue: [],
+    activeCount: 0,
+    completedCount: 0,
+    pendingRequestCount: 0,
+  });
 
   useEffect(() => {
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 5000);
-    return () => window.clearInterval(timer);
-  }, [refresh]);
+    let alive = true;
 
-  const songs = data?.queue ?? [];
+    const load = async () => {
+      try {
+        const response = await fetch("/api/queue-overlay", {
+          cache: "no-store",
+        });
+        const json = await response.json();
+
+        if (alive && response.ok && json.success) {
+          setData(json);
+        }
+      } catch (error) {
+        console.error("Queue overlay refresh failed", error);
+      }
+    };
+
+    load();
+
+    const timer = window.setInterval(load, 5000);
+
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   return (
-    <main className="overlay-root min-h-screen w-full p-3 sm:p-4">
-      <section className="mx-auto w-full max-w-[430px] overflow-hidden rounded-[22px] border border-[#e8d9cc] bg-[#fffaf5]/[0.97] text-[#3d3028] shadow-[0_12px_40px_rgba(35,24,16,0.20)]">
-        <header className="border-b border-[#eee2d8] bg-gradient-to-r from-[#fffaf5] to-[#f5e9df] px-5 py-4">
-          <p className="text-[10px] font-bold tracking-[0.24em] text-[#a18d7e]">SANGCHU PLAY QUEUE</p>
-          <div className="mt-1 flex items-center gap-2">
-            <span className="text-2xl">🎶</span>
-            <h1 className="text-xl font-extrabold tracking-tight">오늘의 노래 Queue</h1>
+    <main className="overlay-stage">
+      <span className="decor decor-star star-a" aria-hidden="true">
+        ✦
+      </span>
+      <span className="decor decor-star star-b" aria-hidden="true">
+        ✧
+      </span>
+      <span className="decor decor-note note-a" aria-hidden="true">
+        ♫
+      </span>
+      <span className="decor decor-note note-b" aria-hidden="true">
+        ♪
+      </span>
+
+      <section className="queue-panel" aria-label="유상츄 노래 Queue">
+        <header className="brand-header">
+          <div className="brand-copy">
+            <div className="eyebrow">
+              <span className="live-dot" />
+              SANGCHU PLAY QUEUE
+            </div>
+
+            <h1>
+              유상츄 노래 대기열 <span>✦</span>
+            </h1>
           </div>
-          <p className="mt-1 text-xs text-[#9a887b]">유상츄 노래 대기열</p>
-          <div className="mt-3 flex gap-2">
-            <div className="flex-1 rounded-xl border border-white/90 bg-white/80 px-3 py-2">
-              <p className="text-[10px] font-semibold text-[#a18d7e]">대기</p>
-              <p className="mt-0.5 text-lg font-extrabold tabular-nums">{data ? data.activeCount : "—"}<span className="ml-1 text-xs font-medium">곡</span></p>
-            </div>
-            <div className="flex-1 rounded-xl border border-white/90 bg-white/80 px-3 py-2">
-              <p className="text-[10px] font-semibold text-[#a18d7e]">완료</p>
-              <p className="mt-0.5 text-lg font-extrabold tabular-nums">{data ? data.completedCount : "—"}<span className="ml-1 text-xs font-medium">곡</span></p>
-            </div>
+
+          <div className="mascot-frame">
+            <img src="/overlay/mojongi.png" alt="모종이 팬캐릭터" />
           </div>
         </header>
 
-        <div className="px-4 py-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-bold">대기 중인 노래</h2>
-            <span className="rounded-full bg-[#f1e7de] px-2.5 py-1 text-[11px] font-bold text-[#8b6f5c]">{data ? `${data.activeCount}곡` : "불러오는 중"}</span>
+        <div className="stats-row" aria-label="Queue 통계">
+          <div className="stat-pill">
+            <span>♫</span>
+            <b>대기 {data.activeCount}곡</b>
           </div>
 
-          {error ? (
-            <div className="rounded-xl border border-[#eadfd5] bg-white/80 px-4 py-5 text-center text-xs text-[#9a887b]">Queue 정보를 불러오지 못했어요.</div>
-          ) : !data ? (
-            <div className="rounded-xl border border-[#eadfd5] bg-white/80 px-4 py-5 text-center text-xs text-[#9a887b]">Queue를 불러오는 중...</div>
-          ) : songs.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-[#d9c6b7] bg-white/65 px-4 py-6 text-center">
-              <p className="text-2xl">🎵</p>
-              <p className="mt-2 text-sm font-bold">아직 대기 중인 노래가 없어요.</p>
-              <p className="mt-1 text-xs text-[#9a887b]">다음 노래를 기다리는 중</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {songs.slice(0, 6).map((song, index) => (
-                <div key={song.id} className="flex min-w-0 items-center gap-3 rounded-xl border border-[#eee2d8] bg-white/90 px-3 py-2.5">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f1e7de] text-xs font-extrabold text-[#8b6f5c]">{index + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold">{song.title}</p>
-                    <p className="mt-0.5 truncate text-xs text-[#9a887b]">{song.artist}</p>
-                  </div>
-                  {song.category && <span className="shrink-0 rounded-full bg-[#f7f1ec] px-2 py-1 text-[10px] text-[#8b6f5c]">{song.category}</span>}
-                </div>
-              ))}
-              {songs.length > 6 && <p className="pt-1 text-center text-[10px] text-[#9a887b]">외 {songs.length - 6}곡 더 대기 중</p>}
-            </div>
-          )}
-
-          <div className="mt-3 flex items-center justify-between rounded-xl border border-[#eadfd5] bg-[#f7f1ec] px-3 py-3">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🎤</span>
-              <div>
-                <p className="text-xs font-bold">요청 대기 중</p>
-                <p className="mt-0.5 text-[10px] text-[#9a887b]">승인 후 Queue에 추가됩니다.</p>
-              </div>
-            </div>
-            <p className="text-lg font-extrabold tabular-nums">{data ? data.pendingRequestCount : "—"}<span className="ml-1 text-xs font-medium">곡</span></p>
+          <div className="stat-pill">
+            <span>✦</span>
+            <b>완료 {data.completedCount}곡</b>
           </div>
-          <div className="mt-3 flex items-center justify-between text-[10px] text-[#a18d7e]">
-            <span>{error ? "연결 확인 필요" : "자동으로 업데이트됩니다"}</span>
-            <span>5초마다 갱신</span>
+
+          <div className="stat-pill request-pill">
+            <span>♪</span>
+            <b>요청 {data.pendingRequestCount}곡</b>
           </div>
         </div>
+
+        <section className="song-card">
+          <div className="section-heading">
+            <span className="heading-icon">♫</span>
+
+            <div>
+              <h2>다음에 부를 노래</h2>
+              <p>UP NEXT</p>
+            </div>
+
+            <span className="heading-star" aria-hidden="true">
+              ✧
+            </span>
+          </div>
+
+          {data.queue.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-note" aria-hidden="true">
+                ♫
+              </div>
+
+              <strong>아직 대기 중인 노래가 없어요</strong>
+              <span>새로운 노래를 기다리는 중이에요.</span>
+            </div>
+          ) : (
+            <ol className="song-list">
+              {data.queue.slice(0, 5).map((song, index) => (
+                <li key={song.id} className="song-row">
+                  <span className="song-number">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+
+                  <div className="song-info">
+                    <strong title={song.title}>{song.title}</strong>
+                    <span title={song.artist}>
+                      {song.artist || "아티스트 미상"}
+                    </span>
+                  </div>
+
+                  {song.category ? (
+                    <span className="song-tag">{song.category}</span>
+                  ) : null}
+
+                  <span className="row-note" aria-hidden="true">
+                    ♪
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
+
+          {data.queue.length > 5 && (
+            <div className="more-songs">
+              + {data.queue.length - 5}곡 더 대기 중
+            </div>
+          )}
+        </section>
+
+        <footer className="request-footer">
+          <span className="footer-note" aria-hidden="true">
+            ♫
+          </span>
+
+          <div className="footer-copy">
+            <strong>노래책에서 노래신청!</strong>
+            <span>
+              요청 <b>{data.pendingRequestCount}곡</b> · 승인 후 Queue에
+              추가돼요
+            </span>
+          </div>
+
+          <span className="footer-star" aria-hidden="true">
+            ✦
+          </span>
+        </footer>
       </section>
+
       <style jsx global>{`
-        html, body { background: transparent !important; margin: 0; padding: 0; }
-        body { overflow: hidden; }
+        * {
+          box-sizing: border-box;
+        }
+
+        html,
+        body {
+          margin: 0;
+          padding: 0;
+          width: 100%;
+          min-height: 100%;
+          background: transparent !important;
+        }
+
+        body {
+          overflow: hidden;
+        }
+
+        .overlay-stage {
+          --ink: #fffdf8;
+          --muted: rgba(255, 255, 255, 0.76);
+          --mint: #c7f0d6;
+          --lavender: #e2d6ff;
+          --gold: #ffe7a6;
+
+          position: relative;
+          width: 100%;
+          min-height: 100vh;
+          padding: 18px;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          overflow: hidden;
+          background: transparent !important;
+          color: var(--ink);
+          font-family:
+            Pretendard, "Noto Sans KR", -apple-system, BlinkMacSystemFont,
+            "Segoe UI", sans-serif;
+        }
+
+        .queue-panel {
+          position: relative;
+          z-index: 1;
+          width: 100%;
+          max-width: 520px;
+          padding: 22px;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.32);
+          border-radius: 26px;
+          background: rgba(31, 43, 43, 0.48);
+          box-shadow:
+            0 12px 40px rgba(0, 0, 0, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+        }
+
+        .brand-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .brand-copy {
+          min-width: 0;
+        }
+
+        .eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+          margin-bottom: 8px;
+          color: var(--mint);
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 2px;
+        }
+
+        .live-dot {
+          display: inline-block;
+          width: 7px;
+          height: 7px;
+          flex-shrink: 0;
+          border-radius: 50%;
+          background: #a8f4c2;
+          box-shadow: 0 0 10px rgba(168, 244, 194, 0.7);
+        }
+
+        .brand-header h1 {
+          margin: 0;
+          color: #fffdf8;
+          font-size: clamp(20px, 4vw, 26px);
+          font-weight: 850;
+          letter-spacing: -1.1px;
+          line-height: 1.35;
+          text-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        .brand-header h1 span {
+          color: var(--gold);
+          font-size: 17px;
+        }
+
+        .mascot-frame {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 68px;
+          height: 68px;
+          flex-shrink: 0;
+          overflow: hidden;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 22px;
+          background: rgba(255, 255, 255, 0.13);
+        }
+
+        .mascot-frame img {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+
+        .stats-row {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          margin-bottom: 15px;
+        }
+
+        .stat-pill {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          min-width: 0;
+          padding: 11px 6px;
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.12);
+          color: #fffdf8;
+          font-size: 12px;
+          white-space: nowrap;
+        }
+
+        .stat-pill > span {
+          color: var(--mint);
+          font-size: 14px;
+        }
+
+        .stat-pill b {
+          font-weight: 750;
+        }
+
+        .request-pill > span {
+          color: var(--gold);
+        }
+
+        .song-card {
+          padding: 17px;
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          border-radius: 20px;
+          background: rgba(15, 24, 25, 0.32);
+        }
+
+        .section-heading {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          margin-bottom: 14px;
+        }
+
+        .heading-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 39px;
+          height: 39px;
+          flex-shrink: 0;
+          border: 1px solid rgba(199, 240, 214, 0.38);
+          border-radius: 13px;
+          background: rgba(199, 240, 214, 0.15);
+          color: var(--mint);
+          font-size: 21px;
+        }
+
+        .section-heading h2 {
+          margin: 0 0 3px;
+          color: #fffdf8;
+          font-size: 16px;
+          font-weight: 800;
+          letter-spacing: -0.5px;
+        }
+
+        .section-heading p {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.62);
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 2px;
+        }
+
+        .heading-star {
+          margin-left: auto;
+          color: var(--lavender);
+          font-size: 23px;
+        }
+
+        .song-list {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          margin: 0;
+          padding: 0;
+          list-style: none;
+        }
+
+        .song-row {
+          display: flex;
+          align-items: center;
+          gap: 11px;
+          min-width: 0;
+          padding: 11px 12px;
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          border-radius: 13px;
+          background: rgba(255, 255, 255, 0.09);
+        }
+
+        .song-number {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          flex-shrink: 0;
+          border: 1px solid rgba(199, 240, 214, 0.25);
+          border-radius: 10px;
+          background: rgba(199, 240, 214, 0.13);
+          color: var(--mint);
+          font-size: 12px;
+          font-weight: 850;
+          font-variant-numeric: tabular-nums;
+        }
+
+        .song-info {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          gap: 4px;
+          min-width: 0;
+        }
+
+        .song-info strong {
+          overflow: hidden;
+          color: #fffdf8;
+          font-size: 13px;
+          font-weight: 750;
+          line-height: 1.4;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .song-info > span {
+          overflow: hidden;
+          color: var(--muted);
+          font-size: 11px;
+          line-height: 1.3;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .song-tag {
+          max-width: 70px;
+          padding: 5px 7px;
+          overflow: hidden;
+          border: 1px solid rgba(226, 214, 255, 0.28);
+          border-radius: 8px;
+          background: rgba(226, 214, 255, 0.13);
+          color: #f0e8ff;
+          font-size: 9px;
+          font-weight: 750;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .row-note {
+          flex-shrink: 0;
+          color: rgba(255, 231, 166, 0.8);
+          font-size: 16px;
+        }
+
+        .empty-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 150px;
+          padding: 20px 8px;
+          text-align: center;
+        }
+
+        .empty-note {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 48px;
+          height: 48px;
+          margin-bottom: 13px;
+          border: 1px solid rgba(199, 240, 214, 0.28);
+          border-radius: 17px;
+          background: rgba(199, 240, 214, 0.12);
+          color: var(--mint);
+          font-size: 25px;
+        }
+
+        .empty-state strong {
+          margin-bottom: 7px;
+          color: #fffdf8;
+          font-size: 13px;
+          font-weight: 750;
+        }
+
+        .empty-state > span {
+          color: var(--muted);
+          font-size: 11px;
+        }
+
+        .more-songs {
+          margin-top: 12px;
+          color: rgba(255, 255, 255, 0.76);
+          font-size: 11px;
+          font-weight: 700;
+          text-align: center;
+        }
+
+        .request-footer {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-top: 14px;
+          padding: 14px;
+          border: 1px solid rgba(255, 231, 166, 0.26);
+          border-radius: 17px;
+          background: rgba(255, 231, 166, 0.1);
+        }
+
+        .footer-note {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 37px;
+          height: 37px;
+          flex-shrink: 0;
+          border: 1px solid rgba(255, 231, 166, 0.25);
+          border-radius: 12px;
+          background: rgba(255, 231, 166, 0.12);
+          color: var(--gold);
+          font-size: 20px;
+        }
+
+        .footer-copy {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          gap: 5px;
+          min-width: 0;
+        }
+
+        .footer-copy strong {
+          color: #fffdf8;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .footer-copy > span {
+          color: var(--muted);
+          font-size: 10px;
+          line-height: 1.5;
+        }
+
+        .footer-copy b {
+          color: var(--gold);
+        }
+
+        .footer-star {
+          flex-shrink: 0;
+          color: var(--gold);
+          font-size: 21px;
+        }
+
+        .decor {
+          position: absolute;
+          z-index: 0;
+          pointer-events: none;
+          user-select: none;
+        }
+
+        .decor-star {
+          color: rgba(255, 231, 166, 0.65);
+        }
+
+        .star-a {
+          top: 30px;
+          left: 8px;
+          font-size: 22px;
+        }
+
+        .star-b {
+          right: 8px;
+          bottom: 70px;
+          color: rgba(226, 214, 255, 0.75);
+          font-size: 25px;
+        }
+
+        .decor-note {
+          color: rgba(199, 240, 214, 0.65);
+        }
+
+        .note-a {
+          top: 220px;
+          right: 5px;
+          font-size: 25px;
+        }
+
+        .note-b {
+          bottom: 25px;
+          left: 7px;
+          font-size: 21px;
+        }
+
+        @media (max-width: 400px) {
+          .overlay-stage {
+            padding: 10px;
+          }
+
+          .queue-panel {
+            padding: 15px;
+            border-radius: 21px;
+          }
+
+          .mascot-frame {
+            width: 55px;
+            height: 55px;
+            border-radius: 17px;
+          }
+
+          .stats-row {
+            gap: 5px;
+          }
+
+          .stat-pill {
+            gap: 4px;
+            padding: 10px 3px;
+            font-size: 10px;
+          }
+
+          .song-card {
+            padding: 13px;
+          }
+
+          .song-row {
+            gap: 8px;
+            padding: 10px 8px;
+          }
+        }
       `}</style>
     </main>
   );
