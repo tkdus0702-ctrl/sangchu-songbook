@@ -958,9 +958,9 @@ const handleDeleteCover = async (
   });
 
   return (
-    <main className="min-h-screen bg-[#fffaf5] text-[#3d3028]">
+    <main className="min-h-screen bg-[#f3faf5] text-[#263c32]">
       {/* 헤더 */}
-      <header className="border-b border-[#eadfd5] bg-[#fffaf5]">
+      <header className="border-b border-[#d9e9de] bg-[#f3faf5]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
           <button
             onClick={() =>
@@ -972,17 +972,17 @@ const handleDeleteCover = async (
             className="group text-left"
           >
             <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8b6f5c] text-lg text-white shadow-sm">
-                ♪
+              <span className="flex h-8 w-10 items-center justify-center rounded-2xl bg-[#5b9877] text-lg text-white shadow-sm ring-4 ring-[#e3efe7]">
+              <img src="/overlay/mojongi.png" alt="모종이 팬캐릭터" />
               </span>
 
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-[#3d3028]">
-                  유상츄 노래책
+                <h1 className="text-xl font-extrabold tracking-tight text-[#263c32]">
+                  유상츄 노래책 <span className="text-[#9b85d2]">🌱</span>
                 </h1>
 
-                <p className="mt-0.5 text-xs text-[#a18d7e]">
-                  SOOP 버츄얼 스트리머 유상츄의 노래책
+                <p className="mt-0.5 text-xs text-[#718f7e]">
+                  SOOP 버츄얼 스트리머 유상츄의 노래책 ♫
                 </p>
               </div>
             </div>
@@ -994,7 +994,7 @@ const handleDeleteCover = async (
                 onClick={() =>
                   setShowLogin(true)
                 }
-                className="rounded-full border border-[#e7d9ce] bg-white px-4 py-2 text-sm font-medium text-[#8b6f5c] transition hover:bg-[#f8f1eb]"
+                className="rounded-full border border-[#d3e5d9] bg-white px-4 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e8f4ec]"
               >
                 🔒 관리자 로그인
               </button>
@@ -1007,7 +1007,7 @@ const handleDeleteCover = async (
                     window.location.href =
                       "/add";
                   }}
-                  className="rounded-full bg-[#8b6f5c] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#725846] hover:shadow-md"
+                  className="rounded-full bg-[#5b9877] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#3e7558] hover:shadow-md"
                 >
                   + 노래 추가
                 </button>
@@ -1017,7 +1017,7 @@ const handleDeleteCover = async (
                     handleUpdateCovers
                   }
                   disabled={updatingCovers}
-                  className="rounded-full border border-[#e7d9ce] bg-white px-4 py-2 text-sm font-medium text-[#8b6f5c] transition hover:bg-[#f8f1eb] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full border border-[#d3e5d9] bg-white px-4 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e8f4ec] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {updatingCovers
                     ? "🖼️ " +
@@ -1031,7 +1031,7 @@ const handleDeleteCover = async (
                   onClick={
                     handleAdminLogout
                   }
-                  className="rounded-full border border-[#e7d9ce] bg-white px-4 py-2 text-sm font-medium text-[#8b6f5c] transition hover:bg-[#f8f1eb]"
+                  className="rounded-full border border-[#d3e5d9] bg-white px-4 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e8f4ec]"
                 >
                   로그아웃
                 </button>
@@ -1049,7 +1049,7 @@ const handleDeleteCover = async (
               관리자 로그인
             </h2>
 
-            <p className="mt-1 text-sm text-[#9a887b]">
+            <p className="mt-1 text-sm text-[#718f7e]">
               관리자 비밀번호를 입력해주세요.
             </p>
 
@@ -1067,7 +1067,7 @@ const handleDeleteCover = async (
                 }
               }}
               placeholder="비밀번호"
-              className="mt-5 w-full rounded-xl border border-[#eadfd5] bg-[#fffaf5] px-4 py-3 text-sm outline-none focus:border-[#8b6f5c]"
+              className="mt-5 w-full rounded-xl border border-[#d9e9de] bg-[#f3faf5] px-4 py-3 text-sm outline-none focus:border-[#5b9877]"
               autoFocus
             />
 
@@ -1077,7 +1077,7 @@ const handleDeleteCover = async (
                   setShowLogin(false);
                   setPassword("");
                 }}
-                className="flex-1 rounded-xl border border-[#eadfd5] px-4 py-3 text-sm font-medium text-[#8b6f5c] transition hover:bg-[#f7f1ec]"
+                className="flex-1 rounded-xl border border-[#d9e9de] px-4 py-3 text-sm font-medium text-[#5b9877] transition hover:bg-[#edf6f0]"
               >
                 취소
               </button>
@@ -1086,7 +1086,7 @@ const handleDeleteCover = async (
                 onClick={
                   handleAdminLogin
                 }
-                className="flex-1 rounded-xl bg-[#8b6f5c] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#725846]"
+                className="flex-1 rounded-xl bg-[#5b9877] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#3e7558]"
               >
                 로그인
               </button>
@@ -1103,7 +1103,7 @@ const handleDeleteCover = async (
               노래 수정
             </h2>
 
-            <p className="mt-1 text-sm text-[#9a887b]">
+            <p className="mt-1 text-sm text-[#718f7e]">
               노래 정보를 수정해주세요.
             </p>
 
@@ -1119,7 +1119,7 @@ const handleDeleteCover = async (
                     e.target.value
                   )
                 }
-                className="w-full rounded-xl border border-[#eadfd5] bg-[#fffaf5] px-4 py-3 text-sm outline-none focus:border-[#8b6f5c]"
+                className="w-full rounded-xl border border-[#d9e9de] bg-[#f3faf5] px-4 py-3 text-sm outline-none focus:border-[#5b9877]"
               />
             </div>
 
@@ -1135,7 +1135,7 @@ const handleDeleteCover = async (
                     e.target.value
                   )
                 }
-                className="w-full rounded-xl border border-[#eadfd5] bg-[#fffaf5] px-4 py-3 text-sm outline-none focus:border-[#8b6f5c]"
+                className="w-full rounded-xl border border-[#d9e9de] bg-[#f3faf5] px-4 py-3 text-sm outline-none focus:border-[#5b9877]"
               />
             </div>
 
@@ -1151,7 +1151,7 @@ const handleDeleteCover = async (
                     e.target.value
                   )
                 }
-                className="w-full rounded-xl border border-[#eadfd5] bg-white px-4 py-3 outline-none focus:border-[#8b6f5c]"
+                className="w-full rounded-xl border border-[#d9e9de] bg-white px-4 py-3 outline-none focus:border-[#5b9877]"
               >
                 <option value="">
                   선택 안 함
@@ -1183,7 +1183,7 @@ const handleDeleteCover = async (
                     e.target.value
                   )
                 }
-                className="w-full rounded-xl border border-[#eadfd5] bg-white px-4 py-3 outline-none focus:border-[#8b6f5c]"
+                className="w-full rounded-xl border border-[#d9e9de] bg-white px-4 py-3 outline-none focus:border-[#5b9877]"
               >
                 <option value="">
                   선택 안 함
@@ -1218,8 +1218,8 @@ const handleDeleteCover = async (
                   }
                   className={
                     editDifficulty === null
-                      ? "flex-1 rounded-xl border border-[#8b6f5c] bg-[#8b6f5c] py-2 text-sm text-white"
-                      : "flex-1 rounded-xl border border-[#eadfd5] py-2 text-sm text-[#9a887b]"
+                      ? "flex-1 rounded-xl border border-[#5b9877] bg-[#5b9877] py-2 text-sm text-white"
+                      : "flex-1 rounded-xl border border-[#d9e9de] py-2 text-sm text-[#718f7e]"
                   }
                 >
                   선택 안 함
@@ -1238,8 +1238,8 @@ const handleDeleteCover = async (
                       className={
                         editDifficulty ===
                         star
-                          ? "flex-1 rounded-xl border border-[#8b6f5c] bg-[#8b6f5c] py-2 text-sm text-white"
-                          : "flex-1 rounded-xl border border-[#eadfd5] bg-white py-2 text-sm"
+                          ? "flex-1 rounded-xl border border-[#5b9877] bg-[#5b9877] py-2 text-sm text-white"
+                          : "flex-1 rounded-xl border border-[#d9e9de] bg-white py-2 text-sm"
                       }
                     >
                       {"⭐".repeat(
@@ -1255,7 +1255,7 @@ const handleDeleteCover = async (
               <button
                 onClick={closeEdit}
                 disabled={savingEdit}
-                className="flex-1 rounded-xl border border-[#eadfd5] px-4 py-3 text-sm font-medium text-[#8b6f5c] transition hover:bg-[#f7f1ec] disabled:opacity-50"
+                className="flex-1 rounded-xl border border-[#d9e9de] px-4 py-3 text-sm font-medium text-[#5b9877] transition hover:bg-[#edf6f0] disabled:opacity-50"
               >
                 취소
               </button>
@@ -1263,7 +1263,7 @@ const handleDeleteCover = async (
               <button
                 onClick={handleEdit}
                 disabled={savingEdit}
-                className="flex-1 rounded-xl bg-[#8b6f5c] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#725846] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-xl bg-[#5b9877] px-4 py-3 text-sm font-medium text-white transition hover:bg-[#3e7558] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingEdit
                   ? "저장 중..."
@@ -1285,12 +1285,12 @@ const handleDeleteCover = async (
               setSearch(e.target.value)
             }
             placeholder="노래 제목이나 아티스트 검색..."
-            className="w-full rounded-2xl border border-[#eadfd5] bg-white px-5 py-4 text-sm outline-none transition placeholder:text-[#b8a99e] focus:border-[#8b6f5c] focus:ring-2 focus:ring-[#8b6f5c]/10"
+            className="w-full rounded-2xl border border-[#d9e9de] bg-white px-5 py-4 text-sm outline-none transition placeholder:text-[#9ab7a5] focus:border-[#5b9877] focus:ring-2 focus:ring-[#5b9877]/10"
           />
         </div>
 
         {/* 필터 */}
-        <div className="mb-8 rounded-2xl border border-[#eadfd5] bg-white p-5">
+        <div className="mb-8 rounded-2xl border border-[#d9e9de] bg-white p-5">
           <div>
             <p className="mb-2 text-sm font-semibold">
               종류
@@ -1316,8 +1316,8 @@ const handleDeleteCover = async (
                   className={
                     categoryFilter ===
                     category
-                      ? "rounded-full bg-[#8b6f5c] px-4 py-2 text-sm text-white"
-                      : "rounded-full border border-[#eadfd5] bg-white px-4 py-2 text-sm text-[#6f5d50] hover:bg-[#fffaf5]"
+                      ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
+                      : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
                   }
                 >
                   {category || "전체"}
@@ -1348,8 +1348,8 @@ const handleDeleteCover = async (
                   }
                   className={
                     levelFilter === level
-                      ? "rounded-full bg-[#8b6f5c] px-4 py-2 text-sm text-white"
-                      : "rounded-full border border-[#eadfd5] bg-white px-4 py-2 text-sm text-[#6f5d50] hover:bg-[#fffaf5]"
+                      ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
+                      : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
                   }
                 >
                   {level || "전체"}
@@ -1373,8 +1373,8 @@ const handleDeleteCover = async (
                 className={
                   difficultyFilter ===
                   null
-                    ? "rounded-full bg-[#8b6f5c] px-4 py-2 text-sm text-white"
-                    : "rounded-full border border-[#eadfd5] bg-white px-4 py-2 text-sm text-[#6f5d50] hover:bg-[#fffaf5]"
+                    ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
+                    : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
                 }
               >
                 전체
@@ -1392,8 +1392,8 @@ const handleDeleteCover = async (
                     className={
                       difficultyFilter ===
                       difficulty
-                        ? "rounded-full bg-[#8b6f5c] px-4 py-2 text-sm text-white"
-                        : "rounded-full border border-[#eadfd5] bg-white px-4 py-2 text-sm text-[#6f5d50] hover:bg-[#fffaf5]"
+                        ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
+                        : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
                     }
                   >
                     {"⭐".repeat(
@@ -1417,13 +1417,13 @@ const handleDeleteCover = async (
             </h2>
 
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1e7de] px-3 py-1.5 text-sm font-medium text-[#8b6f5c]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e3efe7] px-3 py-1.5 text-sm font-medium text-[#5b9877]">
                 🎵 전체 {songs.length}곡
               </span>
 
               {filteredSongs.length !==
                 songs.length && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#eadfd5] bg-white px-3 py-1.5 text-sm text-[#9a887b]">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d9e9de] bg-white px-3 py-1.5 text-sm text-[#718f7e]">
                   현재{" "}
                   {
                     filteredSongs.length
@@ -1447,7 +1447,7 @@ const handleDeleteCover = async (
                     | "popular"
                 )
               }
-              className="rounded-xl border border-[#eadfd5] bg-white px-4 py-2.5 text-sm font-medium text-[#8b6f5c] outline-none transition hover:bg-[#f8f1eb] focus:border-[#8b6f5c]"
+              className="rounded-xl border border-[#d9e9de] bg-white px-4 py-2.5 text-sm font-medium text-[#5b9877] outline-none transition hover:bg-[#e8f4ec] focus:border-[#5b9877]"
             >
               <option value="latest">
                 🆕 최신순
@@ -1467,15 +1467,15 @@ const handleDeleteCover = async (
             </select>
 
             {/* 보기 전환 */}
-            <div className="flex rounded-xl border border-[#eadfd5] bg-white p-1">
+            <div className="flex rounded-xl border border-[#d9e9de] bg-white p-1">
               <button
                 onClick={() =>
                   setViewMode("grid")
                 }
                 className={
                   viewMode === "grid"
-                    ? "rounded-lg bg-[#8b6f5c] px-3 py-2 text-sm font-medium text-white shadow-sm"
-                    : "rounded-lg px-3 py-2 text-sm text-[#8b6f5c] transition hover:bg-[#f8f1eb]"
+                    ? "rounded-lg bg-[#5b9877] px-3 py-2 text-sm font-medium text-white shadow-sm"
+                    : "rounded-lg px-3 py-2 text-sm text-[#5b9877] transition hover:bg-[#e8f4ec]"
                 }
               >
                 ▦ 블럭
@@ -1487,8 +1487,8 @@ const handleDeleteCover = async (
                 }
                 className={
                   viewMode === "list"
-                    ? "rounded-lg bg-[#8b6f5c] px-3 py-2 text-sm font-medium text-white shadow-sm"
-                    : "rounded-lg px-3 py-2 text-sm text-[#8b6f5c] transition hover:bg-[#f8f1eb]"
+                    ? "rounded-lg bg-[#5b9877] px-3 py-2 text-sm font-medium text-white shadow-sm"
+                    : "rounded-lg px-3 py-2 text-sm text-[#5b9877] transition hover:bg-[#e8f4ec]"
                 }
               >
                 ☰ 리스트
@@ -1499,20 +1499,20 @@ const handleDeleteCover = async (
 
         {/* 커버 검색 진행 표시 */}
         {updatingCovers && (
-          <div className="mb-5 rounded-2xl border border-[#eadfd5] bg-white p-4 shadow-sm">
+          <div className="mb-5 rounded-2xl border border-[#d9e9de] bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-semibold text-[#6f5d50]">
+                <p className="text-sm font-semibold text-[#496d56]">
                   🖼️ 앨범 커버를 찾고 있어요
                 </p>
 
-                <p className="mt-1 text-xs text-[#a18d7e]">
+                <p className="mt-1 text-xs text-[#789786]">
                   Bugs → YouTube 순서로
                   검색하고 있습니다.
                 </p>
               </div>
 
-              <span className="text-sm font-bold text-[#8b6f5c]">
+              <span className="text-sm font-bold text-[#5b9877]">
                 {
                   coverProgress.processed
                 }
@@ -1523,9 +1523,9 @@ const handleDeleteCover = async (
               </span>
             </div>
 
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#f1e7de]">
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e3efe7]">
               <div
-                className="h-full rounded-full bg-[#8b6f5c] transition-all duration-300"
+                className="h-full rounded-full bg-[#5b9877] transition-all duration-300"
                 style={{
                   width:
                     coverProgress.total >
@@ -1575,14 +1575,14 @@ const handleDeleteCover = async (
                   key={song.id}
                   className={
                     viewMode === "grid"
-                      ? "group relative flex min-h-[360px] w-full flex-col overflow-hidden rounded-2xl border border-[#eadfd5] bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-[#cdbbab] hover:shadow-md"
-                      : "group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-[#eadfd5] bg-white p-4 pr-20 shadow-sm transition hover:-translate-y-0.5 hover:border-[#cdbbab] hover:shadow-md"
+                      ? "group relative flex min-h-[360px] w-full flex-col overflow-hidden rounded-2xl border border-[#d9e9de] bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-[#c2d9c9] hover:shadow-md"
+                      : "group relative flex w-full items-center justify-between overflow-hidden rounded-2xl border border-[#d9e9de] bg-white p-4 pr-20 shadow-sm transition hover:-translate-y-0.5 hover:border-[#c2d9c9] hover:shadow-md"
                   }
                 >
                   {/* 블럭형 커버 */}
                   {viewMode ===
                     "grid" && (
-                    <div className="relative aspect-square w-full overflow-hidden bg-[#f7f1ec]">
+                    <div className="relative aspect-square w-full overflow-hidden bg-[#edf6f0]">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -1590,7 +1590,7 @@ const handleDeleteCover = async (
                           void handleSongQueueAction(song);
                         }}
                         disabled={!!processingSongIds[song.id] || (!isAdmin && (!userId || !!requestedSongIds[song.id]))}
-                        className="absolute left-2 top-2 z-20 rounded-lg border border-white/70 bg-white/95 px-3 py-2 text-xs font-bold text-[#8b6f5c] shadow-md transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
+                        className="absolute left-2 top-2 z-20 rounded-lg border border-white/70 bg-white/95 px-3 py-2 text-xs font-bold text-[#5b9877] shadow-md transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         {processingSongIds[song.id]
                           ? "처리 중..."
@@ -1615,11 +1615,11 @@ const handleDeleteCover = async (
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <div className="text-center">
-                            <div className="text-5xl text-[#cdbbab]">
+                            <div className="text-5xl text-[#c2d9c9]">
                               ♪
                             </div>
 
-                            <p className="mt-2 text-xs text-[#b8a99e]">
+                            <p className="mt-2 text-xs text-[#9ab7a5]">
                               커버 없음
                             </p>
                           </div>
@@ -1631,7 +1631,7 @@ const handleDeleteCover = async (
                   {/* 리스트형 커버 */}
                   {viewMode ===
                     "list" && (
-                    <div className="relative mr-4 h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#f7f1ec]">
+                    <div className="relative mr-4 h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-[#edf6f0]">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -1640,7 +1640,7 @@ const handleDeleteCover = async (
                         }}
                         disabled={!!processingSongIds[song.id] || (!isAdmin && (!userId || !!requestedSongIds[song.id]))}
                         aria-label={isAdmin ? `${song.title} Queue 추가` : `${song.title} 요청`}
-                        className="absolute inset-x-0 top-0 z-20 bg-white/95 px-1 py-1.5 text-[10px] font-bold leading-tight text-[#8b6f5c] shadow-sm disabled:opacity-70"
+                        className="absolute inset-x-0 top-0 z-20 bg-white/95 px-1 py-1.5 text-[10px] font-bold leading-tight text-[#5b9877] shadow-sm disabled:opacity-70"
                       >
                         {processingSongIds[song.id]
                           ? "처리 중"
@@ -1664,7 +1664,7 @@ const handleDeleteCover = async (
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
-                          <span className="text-2xl text-[#cdbbab]">
+                          <span className="text-2xl text-[#c2d9c9]">
                             ♪
                           </span>
                         </div>
@@ -1685,13 +1685,13 @@ const handleDeleteCover = async (
                       {song.title}
                     </h3>
 
-                    <p className="whitespace-normal break-words leading-snug text-[#9a887b]">
+                    <p className="whitespace-normal break-words leading-snug text-[#718f7e]">
                       {song.artist}
                     </p>
 
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {song.category && (
-                        <span className="rounded-full bg-[#f1e7de] px-2.5 py-1 text-xs text-[#8b6f5c]">
+                        <span className="rounded-full bg-[#e3efe7] px-2.5 py-1 text-xs text-[#5b9877]">
                           {
                             song.category
                           }
@@ -1699,7 +1699,7 @@ const handleDeleteCover = async (
                       )}
 
                       {song.level && (
-                        <span className="rounded-full bg-[#f7f1ec] px-2.5 py-1 text-xs text-[#8b6f5c]">
+                        <span className="rounded-full bg-[#edf6f0] px-2.5 py-1 text-xs text-[#5b9877]">
                           {
                             song.level
                           }
@@ -1707,7 +1707,7 @@ const handleDeleteCover = async (
                       )}
 
                       {song.difficulty && (
-                        <span className="rounded-full bg-[#f7f1ec] px-2.5 py-1 text-xs text-[#8b6f5c]">
+                        <span className="rounded-full bg-[#edf6f0] px-2.5 py-1 text-xs text-[#5b9877]">
                           {"⭐".repeat(
                             song.difficulty
                           )}
@@ -1728,7 +1728,7 @@ const handleDeleteCover = async (
       onClick={() =>
         openEdit(song)
       }
-      className="rounded-lg border border-[#eadfd5] px-3 py-1.5 text-xs font-medium text-[#8b6f5c] transition hover:bg-[#f7f1ec]"
+      className="rounded-lg border border-[#d9e9de] px-3 py-1.5 text-xs font-medium text-[#5b9877] transition hover:bg-[#edf6f0]"
     >
       ✏️ 수정
     </button>
@@ -1742,7 +1742,7 @@ const handleDeleteCover = async (
             song.title
           )
         }
-        className="rounded-lg border border-[#eadfd5] px-3 py-1.5 text-xs font-medium text-[#9a887b] transition hover:bg-[#f7f1ec]"
+        className="rounded-lg border border-[#d9e9de] px-3 py-1.5 text-xs font-medium text-[#718f7e] transition hover:bg-[#edf6f0]"
       >
         🖼️ 커버 삭제
       </button>
@@ -1755,7 +1755,7 @@ const handleDeleteCover = async (
           song.title
         )
       }
-      className="rounded-lg border border-[#eadfd5] px-3 py-1.5 text-xs font-medium text-[#a66b5b] transition hover:bg-[#fff1ed]"
+      className="rounded-lg border border-[#d9e9de] px-3 py-1.5 text-xs font-medium text-[#7965b4] transition hover:bg-[#f0ebfb]"
     >
       삭제
     </button>
@@ -1772,12 +1772,12 @@ const handleDeleteCover = async (
     viewMode === "grid"
       ? "absolute bottom-11 right-2 flex flex-col items-center justify-center rounded-2xl px-3 py-2 transition " +
         (isLiked
-          ? "bg-[#fff4f0]"
-          : "bg-transparent hover:bg-[#fffaf5]")
+          ? "bg-[#f6f2ff]"
+          : "bg-transparent hover:bg-[#f3faf5]")
       : "absolute right-4 top-1/2 flex -translate-y-1/2 flex-col items-center justify-center rounded-2xl px-3 py-2 transition " +
         (isLiked
-          ? "bg-[#fff4f0]"
-          : "bg-transparent hover:bg-[#fffaf5]")
+          ? "bg-[#f6f2ff]"
+          : "bg-transparent hover:bg-[#f3faf5]")
   }
   aria-label={
     isLiked
@@ -1799,13 +1799,13 @@ const handleDeleteCover = async (
       viewBox="0 0 24 24"
       fill={
         isLiked
-          ? "#e88b7d"
+          ? "#9b85d2"
           : "none"
       }
       stroke={
         isLiked
-          ? "#e88b7d"
-          : "#b8a99e"
+          ? "#9b85d2"
+          : "#9ab7a5"
       }
       strokeWidth="1.8"
       strokeLinecap="round"
@@ -1819,8 +1819,8 @@ const handleDeleteCover = async (
     className={
       "mt-0.5 text-xs font-semibold " +
       (isLiked
-        ? "text-[#e88b7d]"
-        : "text-[#b8a99e]")
+        ? "text-[#9b85d2]"
+        : "text-[#9ab7a5]")
     }
   >
     {likes}
@@ -1844,7 +1844,7 @@ const handleDeleteCover = async (
               검색 결과가 없어요
             </p>
 
-            <p className="mt-1 text-sm text-[#9a887b]">
+            <p className="mt-1 text-sm text-[#718f7e]">
               다른 제목이나 아티스트를
               검색해보세요.
             </p>
@@ -1852,7 +1852,7 @@ const handleDeleteCover = async (
         )}
       </section>
 
-      <footer className="mx-auto max-w-6xl px-6 py-10 text-center text-xs text-[#b8a99e]">
+      <footer className="mx-auto max-w-6xl px-6 py-10 text-center text-xs text-[#9ab7a5]">
         SANGCHU SONGBOOK
       </footer>
     </main>

@@ -67,8 +67,7 @@ export default function QueueOverlayPage() {
         <header className="brand-header">
           <div className="brand-copy">
             <div className="eyebrow"><span className="eyebrow-dot" /> SANGCHU PLAY QUEUE</div>
-            <h1>모종이 노래책 <span className="tiny-sprout">♣</span></h1>
-            <p>상추를 키우는 작은 재배자 · Halloween Night</p>
+            <h1>유상츄 노래 대기열 <span className="tiny-sprout">♣</span></h1>
           </div>
           <div className="mascot-frame">
             <img src="/overlay/mojongi.png" alt="모종이 팬캐릭터" />
@@ -116,12 +115,11 @@ export default function QueueOverlayPage() {
         <footer className="request-footer">
           <div className="footer-ghost">👻</div>
           <div className="footer-copy">
-            <strong>노래 신청은 채팅으로!</strong>
+            <strong>노래책에서 노래신청!</strong>
             <span>요청 대기 <b>{data.pendingRequestCount}곡</b> · 승인 후 Queue에 추가돼요</span>
           </div>
           <div className="footer-pumpkin">🎃</div>
         </footer>
-        <div className="update-line"><span className={updated ? "live-dot" : "live-dot offline"} /> 5초마다 자동 업데이트 · 즐거운 할로윈 밤!</div>
       </section>
       <style jsx global>{`
         * { box-sizing: border-box; }
