@@ -117,13 +117,26 @@ export default function SoopTestPage() {
       setStatus("채팅 서버 연결 중...");
       log("connect() 호출");
 
-      await sdk.connect();
+     
+await sdk.connect();
 
-      const room = await sdk.getRoomInfo();
+log("connect() 완료. 채팅 서버 연결 상태를 확인합니다.");
 
-      setStatus(`연결된 방송: ${room.bjId}`);
-      log(`방송 ID: ${room.bjId}`);
-      log(`채팅 번호: ${room.chatNumber}`);
+await new Promise((resolve) => setTimeout(resolve, 3000));
+
+const room = await sdk.getRoomInfo();
+
+if (!room.bjId || room.chatNumber === 0) {
+  setStatus("방송 정보를 가져오지 못했습니다.");
+  log("방송 ID 또는 채팅 번호가 비어 있습니다.");
+  log("SDK 연결 오류 및 브라우저 콘솔을 확인해 주세요.");
+  return;
+}
+
+setStatus(`연결된 방송: ${room.bjId}`);
+log(`방송 ID: ${room.bjId}`);
+log(`채팅 번호: ${room.chatNumber}`);
+
     } catch (error) {
       const message =
         error instanceof Error ? error.message : String(error);
