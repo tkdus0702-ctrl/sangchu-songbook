@@ -52,6 +52,13 @@ export default function Home() {
   // SOOP 채팅 연결 상태
   const soopSdkRef = useRef<SoopChatSdk | null>(null);
   const processingSoopRequestsRef = useRef<Set<string>>(new Set());
+
+  // SOOP 자동 재연결 관리
+  const soopRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const soopRetryCountRef = useRef(0);
+  const soopConnectingRef = useRef(false);
+  const soopShouldReconnectRef = useRef(true);
+
   const [soopConnected, setSoopConnected] = useState(false);
   const [soopAuthenticated, setSoopAuthenticated] = useState(false);
   const [soopBusy, setSoopBusy] = useState(false);
@@ -131,6 +138,14 @@ const [requestedSongIds, setRequestedSongIds] =
       const result = await response.json();
 
       if (result.success) {
+        // 관리자 로그아웃 시 채팅 재연결을 중단하고 연결만 해제합니다.
+        soopShouldReconnectRef.current = false;
+        if (soopRetryTimerRef.current) {
+          clearTimeout(soopRetryTimerRef.current);
+          soopRetryTimerRef.current = null;
+        }
+        soopRetryCountRef.current = 0;
+        disconnectSoopChat();
         setIsAdmin(false);
         alert("로그아웃되었습니다.");
       } else {
@@ -222,28 +237,53 @@ const handleSoopSongRequest = async (message: SoopChatMessage) => {
   }
 };
 
-// 메인페이지에서 직접 SOOP 채팅 연결
-const connectSoopChat = async (fromOAuthCallback = false) => {
+// 연결 실패 시 재시도 간격: 3초 → 6초 → 12초 → 최대 30초
+function scheduleSoopReconnect() {
+  if (!soopShouldReconnectRef.current) return;
+  if (soopRetryTimerRef.current) return;
+
+  const delays = [3000, 6000, 12000, 30000];
+  const delay = delays[Math.min(soopRetryCountRef.current, delays.length - 1)];
+  soopRetryCountRef.current += 1;
+
+  setSoopStatus(`연결 끊김 · ${Math.round(delay / 1000)}초 후 재연결 시도`);
+
+  soopRetryTimerRef.current = setTimeout(() => {
+    soopRetryTimerRef.current = null;
+    if (soopShouldReconnectRef.current) {
+      void connectSoopChat(true, true);
+    }
+  }, delay);
+}
+
+// SOOP 채팅 연결 및 자동 재연결
+const connectSoopChat = async (
+  fromOAuthCallback = false,
+  automatic = false
+) => {
   if (!isAdmin && !fromOAuthCallback) {
-    alert("관리자 로그인 후 이용해주세요.");
+    if (!automatic) alert("관리자 로그인 후 이용해주세요.");
     return;
   }
 
+  if (soopConnectingRef.current) return;
+
   if (soopSdkRef.current) {
-    setSoopStatus("이미 채팅에 연결되어 있습니다.");
     setSoopConnected(true);
+    setSoopStatus("이미 채팅에 연결되어 있습니다.");
     return;
   }
 
   if (!SOOP_CLIENT_ID) {
-    alert(
-      "NEXT_PUBLIC_SOOP_CLIENT_ID 환경 변수가 없습니다. 환경 변수를 확인하고 개발 서버를 재시작해주세요."
-    );
+    setSoopStatus("SOOP Client ID 환경 변수를 확인해주세요.");
     return;
   }
 
+  soopConnectingRef.current = true;
   setSoopBusy(true);
   setSoopStatus("SOOP 인증 확인 중...");
+
+  let sdk: SoopChatSdk | null = null;
 
   try {
     const tokenResponse = await fetch("/api/soop/test-token", {
@@ -253,7 +293,14 @@ const connectSoopChat = async (fromOAuthCallback = false) => {
     const tokenData = await tokenResponse.json();
 
     if (!tokenResponse.ok || !tokenData.accessToken) {
-      // 저장된 토큰이 없으면 SOOP OAuth 인증부터 진행
+      setSoopAuthenticated(false);
+      setSoopConnected(false);
+
+      if (automatic) {
+        setSoopStatus("SOOP 인증이 필요합니다. API 연결 버튼을 눌러주세요.");
+        return;
+      }
+
       window.location.assign("/api/soop/auth");
       return;
     }
@@ -266,57 +313,65 @@ const connectSoopChat = async (fromOAuthCallback = false) => {
     if (!soopGlobal?.ChatSDK) {
       throw new Error("SOOP.ChatSDK를 찾을 수 없습니다.");
     }
-    const sdk = new soopGlobal.ChatSDK(SOOP_CLIENT_ID);
+
+    sdk = new soopGlobal.ChatSDK(SOOP_CLIENT_ID);
     soopSdkRef.current = sdk;
     sdk.setAuth(tokenData.accessToken);
 
     sdk.handleMessageReceived((action, message) => {
-      if (action === "MESSAGE") {
-        const chatText = String(message.message ?? "").trim();
-        if (/^!요청\s+/u.test(chatText)) {
-          void handleSoopSongRequest(message);
-        }
+      if (action !== "MESSAGE") return;
+      const chatText = String(message.message ?? "").trim();
+      if (/^!요청\s+/u.test(chatText)) {
+        void handleSoopSongRequest(message);
       }
     });
 
     sdk.handleChatClosed(() => {
+      // 이미 새 SDK로 교체됐거나 사용자가 직접 연결을 끊은 경우 무시
+      if (soopSdkRef.current !== sdk) return;
+
+      soopSdkRef.current = null;
       setSoopConnected(false);
       setSoopStatus("채팅 연결 종료");
 
-      if (soopSdkRef.current === sdk) {
-        soopSdkRef.current = null;
+      if (soopShouldReconnectRef.current) {
+        scheduleSoopReconnect();
       }
     });
 
     sdk.handleError((code, message) => {
-      setSoopStatus(`SDK 오류: ${code}`);
       console.error("[SOOP SDK 오류]", code, message);
+      setSoopStatus(`SDK 오류: ${code}`);
     });
 
     setSoopStatus("채팅 서버 연결 중...");
     await sdk.connect();
-
     await new Promise((resolve) => setTimeout(resolve, 3000));
-    const room = await sdk.getRoomInfo();
 
-    if (!room.bjId || room.chatNumber === 0) {
-      setSoopConnected(false);
-      setSoopStatus("방송 정보를 가져오지 못했습니다.");
-      return;
+    // 연결 확인 대기 중 SDK가 종료되었는지 확인
+    if (soopSdkRef.current !== sdk) {
+      throw new Error("채팅 연결이 도중에 종료되었습니다.");
     }
 
+    const room = await sdk.getRoomInfo();
+    if (!room.bjId || room.chatNumber === 0) {
+      throw new Error("방송 정보를 가져오지 못했습니다.");
+    }
+
+    soopRetryCountRef.current = 0;
     setSoopConnected(true);
     setSoopAuthenticated(true);
     setSoopStatus(`연결됨: ${room.bjId}`);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : String(error);
-    setSoopConnected(false);
-    setSoopStatus(`연결 실패: ${message}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error("[SOOP 연결 실패]", error);
+    setSoopConnected(false);
+    setSoopStatus(`연결 실패: ${errorMessage}`);
 
-    const sdk = soopSdkRef.current;
-    soopSdkRef.current = null;
+    if (sdk && soopSdkRef.current === sdk) {
+      soopSdkRef.current = null;
+    }
+
     if (sdk) {
       try {
         sdk.disconnect();
@@ -324,7 +379,12 @@ const connectSoopChat = async (fromOAuthCallback = false) => {
         console.warn("[SOOP] 연결 정리 중 오류:", disconnectError);
       }
     }
+
+    if (soopShouldReconnectRef.current) {
+      scheduleSoopReconnect();
+    }
   } finally {
+    soopConnectingRef.current = false;
     setSoopBusy(false);
   }
 };
@@ -335,27 +395,31 @@ const disconnectSoopChat = () => {
   soopSdkRef.current = null;
   setSoopConnected(false);
 
-  if (!sdk) {
-    setSoopStatus("현재 연결된 채팅이 없습니다.");
-    return;
-  }
-
-  try {
-    sdk.disconnect();
-  } catch (error) {
-    // 일부 SDK 버전은 종료 이벤트 처리 중 내부 오류를 발생시킬 수 있음
-    console.warn("[SOOP] SDK 연결 해제 중 오류:", error);
+  if (sdk) {
+    try {
+      sdk.disconnect();
+    } catch (error) {
+      console.warn("[SOOP] SDK 연결 해제 중 오류:", error);
+    }
   }
 
   setSoopStatus("채팅 연결 해제됨 (인증 유지)");
 };
 
-// SOOP 로그아웃: SDK 종료 + Supabase 토큰 삭제
+// SOOP 로그아웃: 자동 재연결 중단 + SDK 종료 + 저장된 토큰 삭제
 const logoutSoop = async () => {
   if (!confirm("SOOP 로그아웃을 진행할까요? 저장된 인증 토큰이 삭제됩니다.")) {
     return;
   }
 
+  soopShouldReconnectRef.current = false;
+
+  if (soopRetryTimerRef.current) {
+    clearTimeout(soopRetryTimerRef.current);
+    soopRetryTimerRef.current = null;
+  }
+
+  soopRetryCountRef.current = 0;
   setSoopBusy(true);
   disconnectSoopChat();
 
@@ -372,16 +436,17 @@ const logoutSoop = async () => {
     }
 
     setSoopAuthenticated(false);
+    setSoopConnected(false);
     setSoopStatus("SOOP 로그아웃 완료");
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : String(error);
-    setSoopStatus(`로그아웃 실패: ${message}`);
-    alert(message);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    setSoopStatus(`로그아웃 실패: ${errorMessage}`);
+    alert(errorMessage);
   } finally {
     setSoopBusy(false);
   }
 };
+
   // 앨범 커버 버튼: 관리자면 Queue 추가, 방문자면 요청 등록
   const handleSongQueueAction = async (song: any) => {
     if (processingSongIds[song.id]) return;
@@ -751,57 +816,86 @@ const logoutSoop = async () => {
   }
 };
 
-  // 저장된 SOOP 토큰 상태 확인
+  // 페이지 진입 시 관리자와 SOOP 인증 상태를 확인하고 자동 연결
   useEffect(() => {
-    const checkSoopToken = async () => {
-      try {
-        const response = await fetch("/api/soop/test-token", {
-          cache: "no-store",
-          credentials: "same-origin",
-        });
-        const result = await response.json();
-        setSoopAuthenticated(Boolean(response.ok && result.accessToken));
-      } catch {
-        setSoopAuthenticated(false);
-      }
-    };
+    let cancelled = false;
 
-    checkSoopToken();
-  }, []);
-
-  // SOOP OAuth 인증 후 메인페이지로 돌아오면 채팅 자동 연결
-  useEffect(() => {
     const url = new URL(window.location.href);
-    if (url.searchParams.get("autoconnect") !== "1") return;
+    const isOAuthCallback = url.searchParams.get("autoconnect") === "1";
 
-    url.searchParams.delete("autoconnect");
-    url.searchParams.delete("soop");
-    window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    if (isOAuthCallback) {
+      url.searchParams.delete("autoconnect");
+      url.searchParams.delete("soop");
+      window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+    }
 
-    const autoConnect = async () => {
+    const initializeSoop = async () => {
       try {
-        const response = await fetch("/api/admin-check", {
+        const adminResponse = await fetch("/api/admin-check", {
           cache: "no-store",
           credentials: "same-origin",
         });
-        const result = await response.json();
+        const adminResult = await adminResponse.json();
+        if (cancelled) return;
 
-        if (!response.ok || !result.success) {
+        const adminLoggedIn = adminResponse.ok && Boolean(adminResult.success);
+        setIsAdmin(adminLoggedIn);
+
+        if (!adminLoggedIn) {
           setSoopStatus("관리자 로그인이 필요합니다.");
           return;
         }
 
-        setIsAdmin(true);
-        await connectSoopChat(true);
+        const tokenResponse = await fetch("/api/soop/test-token", {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+        const tokenResult = await tokenResponse.json();
+        if (cancelled) return;
+
+        const hasToken = tokenResponse.ok && Boolean(tokenResult.accessToken);
+        setSoopAuthenticated(hasToken);
+
+        if (hasToken) {
+          soopShouldReconnectRef.current = true;
+          await connectSoopChat(true, true);
+        } else if (isOAuthCallback) {
+          setSoopStatus("SOOP 인증 상태를 확인해주세요.");
+        } else {
+          setSoopStatus("SOOP 연결 대기 중");
+        }
       } catch (error) {
-        console.error("[SOOP 자동 연결 실패]", error);
-        setSoopStatus("SOOP 자동 연결에 실패했습니다.");
+        console.error("[SOOP 초기화 실패]", error);
+        if (!cancelled) setSoopStatus("SOOP 연결 상태 확인 실패");
       }
     };
 
-    void autoConnect();
-    // URL의 autoconnect 값이 있을 때 한 번만 실행
+    void initializeSoop();
+
+    return () => {
+      cancelled = true;
+    };
+    // 최초 페이지 진입 시 한 번 실행
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 페이지를 벗어날 때 타이머와 브라우저 SDK 연결 정리
+  useEffect(() => {
+    return () => {
+      if (soopRetryTimerRef.current) {
+        clearTimeout(soopRetryTimerRef.current);
+        soopRetryTimerRef.current = null;
+      }
+      const sdk = soopSdkRef.current;
+      soopSdkRef.current = null;
+      if (sdk) {
+        try {
+          sdk.disconnect();
+        } catch (error) {
+          console.warn("[SOOP] 페이지 종료 시 연결 정리 오류:", error);
+        }
+      }
+    };
   }, []);
 
   // 관리자 상태 확인
@@ -1342,9 +1436,10 @@ const handleDeleteCover = async (
                 </button>
 <button
   onClick={() => {
-    if (soopAuthenticated) {
+    if (soopAuthenticated && soopConnected) {
       void logoutSoop();
     } else {
+      soopShouldReconnectRef.current = true;
       void connectSoopChat();
     }
   }}
@@ -1353,16 +1448,11 @@ const handleDeleteCover = async (
 >
   {soopBusy
     ? "⏳ SOOP 처리 중..."
-    : soopAuthenticated
+    : soopAuthenticated && soopConnected
       ? "🚪 SOOP 로그아웃"
-      : "📡 SOOP API 연결"}
-</button>
-<button
-  onClick={disconnectSoopChat}
-  disabled={!soopConnected || soopBusy}
-  className="rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e3efe7] disabled:cursor-not-allowed disabled:opacity-50"
->
-  채팅 연결 해제
+      : soopAuthenticated
+        ? "🔄 SOOP 재연결"
+        : "📡 SOOP API 연결"}
 </button>
 <span className="max-w-40 text-xs text-[#718f7e]" title={soopStatus}>
   {`SOOP: ${soopStatus}`}
