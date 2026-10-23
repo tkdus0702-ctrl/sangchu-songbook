@@ -58,10 +58,13 @@ export default function Home() {
   const soopRetryCountRef = useRef(0);
   const soopConnectingRef = useRef(false);
   const soopShouldReconnectRef = useRef(true);
+  const soopAttemptIdRef = useRef(0);
+  const soopLoggingOutRef = useRef(false);
 
   const [soopConnected, setSoopConnected] = useState(false);
   const [soopAuthenticated, setSoopAuthenticated] = useState(false);
   const [soopBusy, setSoopBusy] = useState(false);
+  const [soopLoggingOut, setSoopLoggingOut] = useState(false);
   const [soopStatus, setSoopStatus] = useState("연결 안 됨");
 
 // 노래별 Queue 추가 / 방문자 요청 처리 상태
@@ -280,8 +283,9 @@ const connectSoopChat = async (
   }
 
   soopConnectingRef.current = true;
+  const attemptId = ++soopAttemptIdRef.current;
   setSoopBusy(true);
-  setSoopStatus("SOOP 인증 확인 중...");
+  setSoopStatus(automatic ? "SOOP 채팅 재연결 중..." : "SOOP 인증 확인 중...");
 
   let sdk: SoopChatSdk | null = null;
 
@@ -291,6 +295,8 @@ const connectSoopChat = async (
       credentials: "same-origin",
     });
     const tokenData = await tokenResponse.json();
+
+    if (attemptId !== soopAttemptIdRef.current) return;
 
     if (!tokenResponse.ok || !tokenData.accessToken) {
       setSoopAuthenticated(false);
@@ -308,6 +314,8 @@ const connectSoopChat = async (
     setSoopAuthenticated(true);
     setSoopStatus("채팅 SDK 로드 중...");
     await loadSoopSdk();
+
+    if (attemptId !== soopAttemptIdRef.current) return;
 
     const soopGlobal = getSoopSdkGlobal();
     if (!soopGlobal?.ChatSDK) {
@@ -348,12 +356,17 @@ const connectSoopChat = async (
     await sdk.connect();
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
+    // 사용자가 로그아웃했거나 더 최신 연결 시도가 시작됐다면 중단
+    if (attemptId !== soopAttemptIdRef.current) return;
+
     // 연결 확인 대기 중 SDK가 종료되었는지 확인
     if (soopSdkRef.current !== sdk) {
       throw new Error("채팅 연결이 도중에 종료되었습니다.");
     }
 
     const room = await sdk.getRoomInfo();
+    if (attemptId !== soopAttemptIdRef.current) return;
+
     if (!room.bjId || room.chatNumber === 0) {
       throw new Error("방송 정보를 가져오지 못했습니다.");
     }
@@ -408,10 +421,16 @@ const disconnectSoopChat = () => {
 
 // SOOP 로그아웃: 자동 재연결 중단 + SDK 종료 + 저장된 토큰 삭제
 const logoutSoop = async () => {
+  if (soopLoggingOutRef.current) return;
+
   if (!confirm("SOOP 로그아웃을 진행할까요? 저장된 인증 토큰이 삭제됩니다.")) {
     return;
   }
 
+  soopLoggingOutRef.current = true;
+  setSoopLoggingOut(true);
+  // 진행 중인 연결 시도까지 무효화하여 로그아웃 후 다시 연결되지 않게 함
+  soopAttemptIdRef.current += 1;
   soopShouldReconnectRef.current = false;
 
   if (soopRetryTimerRef.current) {
@@ -443,6 +462,8 @@ const logoutSoop = async () => {
     setSoopStatus(`로그아웃 실패: ${errorMessage}`);
     alert(errorMessage);
   } finally {
+    soopLoggingOutRef.current = false;
+    setSoopLoggingOut(false);
     setSoopBusy(false);
   }
 };
@@ -1434,26 +1455,34 @@ const handleDeleteCover = async (
                 >
                   + 노래 추가
                 </button>
-<button
-  onClick={() => {
-    if (soopAuthenticated && soopConnected) {
-      void logoutSoop();
-    } else {
+<div className="flex flex-wrap items-center gap-2">
+  <button
+    onClick={() => {
+      if (soopConnected || soopBusy || soopLoggingOut) return;
       soopShouldReconnectRef.current = true;
       void connectSoopChat();
-    }
-  }}
-  disabled={soopBusy}
-  className="rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e3efe7] disabled:cursor-not-allowed disabled:opacity-50"
->
-  {soopBusy
-    ? "⏳ SOOP 처리 중..."
-    : soopAuthenticated && soopConnected
-      ? "🚪 SOOP 로그아웃"
-      : soopAuthenticated
-        ? "🔄 SOOP 재연결"
-        : "📡 SOOP API 연결"}
-</button>
+    }}
+    disabled={soopBusy || soopConnected || soopLoggingOut}
+    className="rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e3efe7] disabled:cursor-not-allowed disabled:opacity-60"
+  >
+    {soopBusy
+      ? "⏳ SOOP 연결 중..."
+      : soopConnected
+        ? "🟢 SOOP 연결됨"
+        : soopAuthenticated
+          ? "🔄 SOOP 재연결"
+          : "📡 SOOP API 연결"}
+  </button>
+
+  <button
+    onClick={() => void logoutSoop()}
+    disabled={soopLoggingOut}
+    className="rounded-full border border-[#e7caca] bg-white px-4 py-2 text-sm font-medium text-[#b45d5d] transition hover:bg-[#fff0f0] disabled:cursor-not-allowed disabled:opacity-50"
+    title="재연결 시도도 중단하고 SOOP 인증을 로그아웃합니다."
+  >
+    🚪 SOOP 로그아웃
+  </button>
+</div>
 <span className="max-w-40 text-xs text-[#718f7e]" title={soopStatus}>
   {`SOOP: ${soopStatus}`}
 </span>
