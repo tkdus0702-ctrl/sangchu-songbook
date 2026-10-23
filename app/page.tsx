@@ -107,7 +107,22 @@ const [requestedSongIds, setRequestedSongIds] =
       alert("로그아웃 중 오류가 발생했습니다.");
     }
   };
+// SOOP API 연결 및 채팅 자동 연결
+const handleSoopApiConnect = () => {
+  if (!isAdmin) {
+    alert("관리자 로그인 후 이용해주세요.");
+    return;
+  }
 
+  const chatWindow = window.open(
+    "/soop-test?autoconnect=1",
+    "_blank"
+  );
+
+  if (!chatWindow) {
+    alert("팝업이 차단되었어요. 이 사이트의 팝업을 허용해주세요.");
+  }
+};
   // 앨범 커버 버튼: 관리자면 Queue 추가, 방문자면 요청 등록
   const handleSongQueueAction = async (song: any) => {
     if (processingSongIds[song.id]) return;
@@ -1013,7 +1028,12 @@ const handleDeleteCover = async (
                 >
                   + 노래 추가
                 </button>
-
+<button
+  onClick={handleSoopApiConnect}
+  className="rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e3efe7]"
+>
+  📡 SOOP API 연결
+</button>
                 <button
                   onClick={
                     handleUpdateCovers

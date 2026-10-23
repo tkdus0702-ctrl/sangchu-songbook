@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
-
+import { useEffect, useRef, useState } from "react";
 type ChatMessage = {
   message?: string;
   userId?: string;
@@ -164,9 +163,11 @@ export default function SoopTestPage() {
 
       const tokenData = await tokenResponse.json();
 
-      if (!tokenResponse.ok || !tokenData.accessToken) {
-        throw new Error(tokenData.error ?? "토큰을 가져오지 못했습니다.");
-      }
+     if (!tokenResponse.ok || !tokenData.accessToken) {
+  // 토큰이 없으면 SOOP 인증으로 이동
+  window.location.replace("/api/soop/auth");
+  return;
+}
 
       await loadSdk();
 
@@ -214,8 +215,11 @@ export default function SoopTestPage() {
     return;
   }
 
-  setStatus(`SDK 오류: ${errorCode}`);
-  log(`SDK 오류 ${errorCode}: ${errorMessage}`);
+console.warn("[SOOP SDK 오류]", {
+  code,
+  message,
+  time: new Date().toISOString(),
+});
 });
       setStatus("채팅 서버 연결 중...");
       log("connect() 호출");
@@ -277,6 +281,73 @@ export default function SoopTestPage() {
     }
   }
 
+async function resetSoopAuth() {
+  const confirmed = window.confirm(
+    "SOOP 인증을 초기화할까요?\n저장된 토큰이 삭제되며, 다시 연결할 때 인증해야 합니다."
+  );
+
+  if (!confirmed) return;
+
+  try {
+    // 현재 브라우저의 채팅 SDK 연결 종료
+    const sdk = sdkRef.current;
+sdkRef.current = null;
+
+if (sdk) {
+  try {
+    sdk.disconnect();
+  } catch (error) {
+    console.warn("SDK 연결 해제 중 오류:", error);
+  }
+}
+
+    setStatus("SOOP 인증 초기화 중...");
+    log("SOOP 인증 초기화를 시작합니다.");
+
+    const response = await fetch("/api/soop/reset-auth", {
+      method: "POST",
+      credentials: "same-origin",
+      cache: "no-store",
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.error ?? "SOOP 인증 초기화에 실패했습니다."
+      );
+    }
+
+    setStatus("SOOP 인증 초기화 완료");
+    log("Supabase에 저장된 SOOP 토큰을 삭제했습니다.");
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : String(error);
+
+    setStatus(`인증 초기화 실패: ${message}`);
+    log(`인증 초기화 실패: ${message}`);
+  }
+}
+
+// URL에 자동 연결 요청이 있으면 채팅을 자동으로 연결
+useEffect(() => {
+  const url = new URL(window.location.href);
+
+  if (url.searchParams.get("autoconnect") !== "1") {
+    return;
+  }
+
+  // 새로고침으로 인한 중복 연결 방지
+  url.searchParams.delete("autoconnect");
+
+  window.history.replaceState(
+    {},
+    "",
+    url.pathname + url.search + url.hash
+  );
+
+  void connectChat();
+}, []);
   return (
     <main style={{ maxWidth: 760, margin: "40px auto", padding: 20 }}>
       <h1>SOOP Chat SDK 테스트</h1>
@@ -291,6 +362,18 @@ export default function SoopTestPage() {
         <button onClick={disconnectChat} style={{ padding: "10px 16px" }}>
           연결 해제
         </button>
+          <button
+    onClick={resetSoopAuth}
+    style={{
+      padding: "10px 16px",
+      color: "#b42318",
+      border: "1px solid #f0c5c2",
+      borderRadius: 6,
+      background: "#fff",
+    }}
+  >
+    SOOP 인증 초기화
+  </button>
       </div>
 
       <h2>상태</h2>
