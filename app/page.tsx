@@ -1455,35 +1455,47 @@ const handleDeleteCover = async (
                 >
                   + 노래 추가
                 </button>
-<div className="flex flex-wrap items-center gap-2">
-  <button
-    onClick={() => {
-      if (soopConnected || soopBusy || soopLoggingOut) return;
-      soopShouldReconnectRef.current = true;
-      void connectSoopChat();
-    }}
-    disabled={soopBusy || soopConnected || soopLoggingOut}
-    className="rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e3efe7] disabled:cursor-not-allowed disabled:opacity-60"
-  >
-    {soopBusy
-      ? "⏳ SOOP 연결 중..."
-      : soopConnected
-        ? "🟢 SOOP 연결됨"
-        : soopAuthenticated
-          ? "🔄 SOOP 재연결"
-          : "📡 SOOP API 연결"}
-  </button>
+<div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
+  {!soopAuthenticated ? (
+    <button
+      onClick={() => {
+        if (soopBusy || soopLoggingOut) return;
+        soopShouldReconnectRef.current = true;
+        void connectSoopChat();
+      }}
+      disabled={soopBusy || soopLoggingOut}
+      className="rounded-full border border-[#d9e9de] bg-white px-3 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e3efe7] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {soopBusy ? "⏳ SOOP 연결 중..." : "📡 SOOP API 연결"}
+    </button>
+  ) : (
+    <>
+      <button
+        onClick={() => void logoutSoop()}
+        disabled={soopLoggingOut}
+        className="rounded-full border border-[#e7caca] bg-white px-3 py-2 text-sm font-medium text-[#b45d5d] transition hover:bg-[#fff0f0] disabled:cursor-not-allowed disabled:opacity-50"
+        title="SOOP API 인증을 해제하고 채팅 연결을 종료합니다."
+      >
+        {soopLoggingOut ? "⏳ 연결 해제 중..." : "🔌 API 연결 해제"}
+      </button>
 
-  <button
-    onClick={() => void logoutSoop()}
-    disabled={soopLoggingOut}
-    className="rounded-full border border-[#e7caca] bg-white px-4 py-2 text-sm font-medium text-[#b45d5d] transition hover:bg-[#fff0f0] disabled:cursor-not-allowed disabled:opacity-50"
-    title="재연결 시도도 중단하고 SOOP 인증을 로그아웃합니다."
-  >
-    🚪 SOOP 로그아웃
-  </button>
+      {!soopConnected && (
+        <button
+          onClick={() => {
+            if (soopBusy || soopLoggingOut) return;
+            soopShouldReconnectRef.current = true;
+            void connectSoopChat();
+          }}
+          disabled={soopBusy || soopLoggingOut}
+          className="rounded-full border border-[#d9e9de] bg-white px-3 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e3efe7] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {soopBusy ? "⏳ 채팅 연결 중..." : "🔄 채팅 재연결"}
+        </button>
+      )}
+    </>
+  )}
 </div>
-<span className="max-w-40 text-xs text-[#718f7e]" title={soopStatus}>
+<span className="max-w-40 truncate text-xs text-[#718f7e]" title={soopStatus}>
   {`SOOP: ${soopStatus}`}
 </span>
                 <button
