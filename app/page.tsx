@@ -196,10 +196,10 @@ const loadSoopSdk = (): Promise<void> =>
     document.head.appendChild(script);
   });
 
-// SOOP 채팅의 !요청 제목 처리
+// SOOP 채팅의 !요청 / !신청 제목 처리
 const handleSoopSongRequest = async (message: SoopChatMessage) => {
   const text = String(message.message ?? "").trim();
-  const match = text.match(/^!요청\s+(.+)$/u);
+  const match = text.match(/^!(?:요청|신청)\s+(.+)$/u);
   if (!match) return;
 
   const title = match[1].trim();
@@ -329,7 +329,7 @@ const connectSoopChat = async (
     sdk.handleMessageReceived((action, message) => {
       if (action !== "MESSAGE") return;
       const chatText = String(message.message ?? "").trim();
-      if (/^!요청\s+/u.test(chatText)) {
+      if (/^!(?:요청|신청)\s+/u.test(chatText)) {
         void handleSoopSongRequest(message);
       }
     });
