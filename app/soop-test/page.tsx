@@ -200,11 +200,23 @@ export default function SoopTestPage() {
         }
       });
 
-      sdk.handleError((code, message) => {
-        setStatus(`SDK 오류: ${code}`);
-        log(`SDK 오류 ${code}: ${message}`);
-      });
+     sdk.handleError((code, message) => {
+  const errorCode = String(code ?? "");
+  const errorMessage = String(message ?? "");
 
+  // SDK가 채팅 서버 접속 관련 안내를 보낸 경우
+  // 실제 채팅 연결이 유지되고 있으면 화면 로그에서 제외
+  if (
+    errorCode.includes("sdk-error") &&
+    errorMessage.includes("채팅 서버 접속 후 시도해주세요")
+  ) {
+    console.warn("[SOOP SDK 참고 오류]", errorCode, errorMessage);
+    return;
+  }
+
+  setStatus(`SDK 오류: ${errorCode}`);
+  log(`SDK 오류 ${errorCode}: ${errorMessage}`);
+});
       setStatus("채팅 서버 연결 중...");
       log("connect() 호출");
 
