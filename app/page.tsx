@@ -30,12 +30,21 @@ const getSoopSdkGlobal = () =>
 
 const SOOP_CLIENT_ID = process.env.NEXT_PUBLIC_SOOP_CLIENT_ID;
 
+const CATEGORIES = [
+  "K-POP", "J-POP", "POP", "드라마", "발라드", "아이돌",
+  "댄스", "랩/힙합", "랩", "인디", "밴드",
+];
+
+const parseCategories = (value: unknown): string[] =>
+  String(value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+
 export default function Home() {
   const [songs, setSongs] = useState<any[]>([]);
   const [search, setSearch] = useState("");
 
-  const [levelFilter, setLevelFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
+  const [artistFilter, setArtistFilter] = useState<Set<string>>(new Set());
+  const [showAllArtists, setShowAllArtists] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState<number | null>(
     null
   );
@@ -95,8 +104,7 @@ const [requestedSongIds, setRequestedSongIds] =
   const [editingSong, setEditingSong] = useState<any | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editArtist, setEditArtist] = useState("");
-  const [editLevel, setEditLevel] = useState("");
-  const [editCategory, setEditCategory] = useState("");
+  const [editCategory, setEditCategory] = useState<string[]>([]);
   const [editDifficulty, setEditDifficulty] = useState<number | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -489,7 +497,6 @@ const logoutSoop = async () => {
             title: song.title,
             artist: song.artist,
             key: song.key,
-            level: song.level,
             category: song.category,
             difficulty: song.difficulty,
           }),
@@ -520,7 +527,6 @@ const logoutSoop = async () => {
           title: song.title,
           artist: song.artist,
           key: song.key,
-          level: song.level,
           category: song.category,
           difficulty: song.difficulty,
           requester_id: userId,
@@ -1084,13 +1090,20 @@ const logoutSoop = async () => {
     }
   };
 
+  const toggleEditCategory = (category: string) => {
+    setEditCategory((prev) =>
+      prev.includes(category)
+        ? prev.filter((item) => item !== category)
+        : [...prev, category]
+    );
+  };
+
   // 수정창 열기
   const openEdit = (song: any) => {
     setEditingSong(song);
     setEditTitle(song.title || "");
     setEditArtist(song.artist || "");
-    setEditLevel(song.level || "");
-    setEditCategory(song.category || "");
+    setEditCategory(parseCategories(song.category));
     setEditDifficulty(
       song.difficulty ?? null
     );
@@ -1101,8 +1114,7 @@ const logoutSoop = async () => {
     setEditingSong(null);
     setEditTitle("");
     setEditArtist("");
-    setEditLevel("");
-    setEditCategory("");
+    setEditCategory([]);
     setEditDifficulty(null);
   };
 
@@ -1132,8 +1144,7 @@ const logoutSoop = async () => {
           id: editingSong.id,
           title: editTitle.trim(),
           artist: editArtist.trim(),
-          level: editLevel,
-          category: editCategory,
+          category: editCategory.join(","),
           difficulty: editDifficulty,
         }),
       });
@@ -1289,6 +1300,32 @@ const handleDeleteCover = async (
     }
   };
 
+  // 등록된 곡 수가 많은 가수부터 정렬하고, 곡 수가 같으면 가나다/알파벳순 정렬
+  const artistSongCounts = new Map<string, number>();
+
+  songs.forEach((song) => {
+    const artist = String(song.artist ?? "").trim();
+    if (!artist) return;
+    artistSongCounts.set(artist, (artistSongCounts.get(artist) ?? 0) + 1);
+  });
+
+  const allArtists = Array.from(artistSongCounts.keys()).sort((a, b) => {
+    const countDifference =
+      (artistSongCounts.get(b) ?? 0) - (artistSongCounts.get(a) ?? 0);
+
+    if (countDifference !== 0) return countDifference;
+
+    return a.localeCompare(b, "ko", {
+      sensitivity: "base",
+      numeric: true,
+    });
+  });
+
+  const firstArtists = allArtists.slice(0, 8);
+  const visibleArtists = showAllArtists
+    ? allArtists
+    : [...firstArtists, ...Array.from(artistFilter).filter((artist) => !firstArtists.includes(artist))];
+
   // 검색 + 필터
   const filteredSongs = songs.filter(
     (song) => {
@@ -1307,14 +1344,16 @@ const handleDeleteCover = async (
         title.includes(keyword) ||
         artist.includes(keyword);
 
-      const matchesLevel =
-        levelFilter === "" ||
-        song.level === levelFilter;
-
+      const songCategories = parseCategories(song.category);
+      // 선택한 카테고리 집합과 노래에 저장된 카테고리 집합이 정확히 같을 때만 표시
       const matchesCategory =
-        categoryFilter === "" ||
-        song.category ===
-          categoryFilter;
+        categoryFilter.length === 0 ||
+        (songCategories.length === categoryFilter.length &&
+          categoryFilter.every((category) => songCategories.includes(category)));
+
+      const matchesArtist =
+        artistFilter.size === 0 ||
+        artistFilter.has(String(song.artist ?? "").trim());
 
       const matchesDifficulty =
         difficultyFilter === null ||
@@ -1323,8 +1362,8 @@ const handleDeleteCover = async (
 
       return (
         matchesSearch &&
-        matchesLevel &&
         matchesCategory &&
+        matchesArtist &&
         matchesDifficulty
       );
     }
@@ -1627,66 +1666,36 @@ const handleDeleteCover = async (
 
             <div className="mt-4">
               <label className="mb-2 block text-sm font-semibold">
-                종류
+                카테고리
               </label>
-
-              <select
-                value={editCategory}
-                onChange={(e) =>
-                  setEditCategory(
-                    e.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-[#d9e9de] bg-white px-4 py-3 outline-none focus:border-[#5b9877]"
-              >
-                <option value="">
-                  선택 안 함
-                </option>
-
-                <option value="K-POP">
-                  K-POP
-                </option>
-
-                <option value="J-POP">
-                  J-POP
-                </option>
-
-                <option value="애교송">
-                  애교송
-                </option>
-              </select>
-            </div>
-
-            <div className="mt-4">
-              <label className="mb-2 block text-sm font-semibold">
-                곡 레벨
-              </label>
-
-              <select
-                value={editLevel}
-                onChange={(e) =>
-                  setEditLevel(
-                    e.target.value
-                  )
-                }
-                className="w-full rounded-xl border border-[#d9e9de] bg-white px-4 py-3 outline-none focus:border-[#5b9877]"
-              >
-                <option value="">
-                  선택 안 함
-                </option>
-
-                <option value="완곡">
-                  완곡
-                </option>
-
-                <option value="미완곡">
-                  미완곡
-                </option>
-
-                <option value="숙제곡">
-                  숙제곡
-                </option>
-              </select>
+              <p className="mb-3 text-xs text-[#718f7e]">
+                여러 개를 선택할 수 있습니다.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map((category) => {
+                  const selected = editCategory.includes(category);
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => toggleEditCategory(category)}
+                      className={
+                        selected
+                          ? "rounded-full border border-[#5b9877] bg-[#5b9877] px-3 py-2 text-sm text-white"
+                          : "rounded-full border border-[#d9e9de] bg-white px-3 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
+                      }
+                    >
+                      {selected && "✓ "}
+                      {category}
+                    </button>
+                  );
+                })}
+              </div>
+              {editCategory.length > 0 && (
+                <p className="mt-2 text-xs text-[#718f7e]">
+                  선택됨: {editCategory.join(", ")}
+                </p>
+              )}
             </div>
 
             <div className="mt-4">
@@ -1779,69 +1788,125 @@ const handleDeleteCover = async (
         <div className="mb-8 rounded-2xl border border-[#d9e9de] bg-white p-5">
           <div>
             <p className="mb-2 text-sm font-semibold">
-              종류
+              카테고리
             </p>
-
             <div className="flex flex-wrap gap-2">
-              {[
-                "",
-                "K-POP",
-                "J-POP",
-                "애교송",
-              ].map((category) => (
-                <button
-                  key={
-                    category ||
-                    "all-category"
-                  }
-                  onClick={() =>
-                    setCategoryFilter(
-                      category
-                    )
-                  }
-                  className={
-                    categoryFilter ===
-                    category
-                      ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
-                      : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
-                  }
-                >
-                  {category || "전체"}
-                </button>
-              ))}
+              <button
+                onClick={() => setCategoryFilter([])}
+                className={
+                  categoryFilter.length === 0
+                    ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
+                    : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
+                }
+              >
+                전체
+              </button>
+              {CATEGORIES.map((category) => {
+                const selected = categoryFilter.includes(category);
+                return (
+                  <button
+                    key={category}
+                    onClick={() =>
+                      setCategoryFilter((prev) =>
+                        selected
+                          ? prev.filter((item) => item !== category)
+                          : [...prev, category]
+                      )
+                    }
+                    className={
+                      selected
+                        ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
+                        : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
+                    }
+                  >
+                    {selected && "✓ "}
+                    {category}
+                  </button>
+                );
+              })}
             </div>
+            {categoryFilter.length > 0 && (
+              <p className="mt-2 text-xs text-[#718f7e]">
+                선택한 카테고리 구성과 정확히 일치하는 노래만 표시합니다.
+              </p>
+            )}
           </div>
 
           <div className="mt-5">
             <p className="mb-2 text-sm font-semibold">
-              곡 레벨
+              가수
             </p>
 
-            <div className="flex flex-wrap gap-2">
-              {[
-                "",
-                "완곡",
-                "미완곡",
-                "숙제곡",
-              ].map((level) => (
-                <button
-                  key={
-                    level ||
-                    "all-level"
-                  }
-                  onClick={() =>
-                    setLevelFilter(level)
-                  }
-                  className={
-                    levelFilter === level
-                      ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
-                      : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
-                  }
-                >
-                  {level || "전체"}
-                </button>
-              ))}
-            </div>
+            {allArtists.length === 0 ? (
+              <p className="text-sm text-[#9ab7a5]">
+                등록된 가수가 없습니다.
+              </p>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setArtistFilter(new Set())}
+                    className={
+                      artistFilter.size === 0
+                        ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
+                        : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
+                    }
+                  >
+                    전체
+                  </button>
+
+                  {visibleArtists.map((artist) => {
+                    const selected = artistFilter.has(artist);
+                    return (
+                      <button
+                        key={artist}
+                        type="button"
+                        onClick={() =>
+                          setArtistFilter((current) => {
+                            const next = new Set(current);
+                            if (next.has(artist)) {
+                              next.delete(artist);
+                            } else {
+                              next.add(artist);
+                            }
+                            return next;
+                          })
+                        }
+                        className={
+                          selected
+                            ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
+                            : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
+                        }
+                      >
+                        {selected && "✓ "}
+                        {artist}
+                        <span className={selected ? "ml-1 text-white/80" : "ml-1 text-[#8ba997]"}>
+                          {artistSongCounts.get(artist) ?? 0}
+                        </span>
+                      </button>
+                    );
+                  })}
+
+                  {allArtists.length > 8 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllArtists((current) => !current)}
+                      className="rounded-full border border-dashed border-[#a9c9b4] bg-[#f3faf5] px-4 py-2 text-sm font-medium text-[#5b9877] transition hover:bg-[#e8f4ec]"
+                    >
+                      {showAllArtists
+                        ? "접기"
+                        : `전체 보기 (+${allArtists.length - 8})`}
+                    </button>
+                  )}
+                </div>
+                {artistFilter.size > 0 && (
+                  <p className="mt-2 text-xs text-[#718f7e]">
+                    {Array.from(artistFilter).join(", ")}의 노래를 표시하고 있습니다. 여러 가수를 선택하면 선택한 가수들의 노래가 모두 표시됩니다.
+                  </p>
+                )}
+              </>
+            )}
           </div>
 
           <div className="mt-5">
@@ -2176,21 +2241,14 @@ const handleDeleteCover = async (
                     </p>
 
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      {song.category && (
-                        <span className="rounded-full bg-[#e3efe7] px-2.5 py-1 text-xs text-[#5b9877]">
-                          {
-                            song.category
-                          }
+                      {parseCategories(song.category).map((category) => (
+                        <span
+                          key={category}
+                          className="rounded-full bg-[#e3efe7] px-2.5 py-1 text-xs text-[#5b9877]"
+                        >
+                          {category}
                         </span>
-                      )}
-
-                      {song.level && (
-                        <span className="rounded-full bg-[#edf6f0] px-2.5 py-1 text-xs text-[#5b9877]">
-                          {
-                            song.level
-                          }
-                        </span>
-                      )}
+                      ))}
 
                       {song.difficulty && (
                         <span className="rounded-full bg-[#edf6f0] px-2.5 py-1 text-xs text-[#5b9877]">
