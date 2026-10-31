@@ -30,10 +30,11 @@ const getSoopSdkGlobal = () =>
 
 const SOOP_CLIENT_ID = process.env.NEXT_PUBLIC_SOOP_CLIENT_ID;
 
-const CATEGORIES = [
-  "K-POP", "J-POP", "POP", "드라마", "발라드", "아이돌",
-  "댄스", "랩/힙합", "랩", "인디", "밴드",
-];
+type SongCategory = {
+  id: number;
+  name: string;
+  position: number;
+};
 
 const parseCategories = (value: unknown): string[] =>
   String(value ?? "").split(",").map((item) => item.trim()).filter(Boolean);
@@ -41,6 +42,22 @@ const parseCategories = (value: unknown): string[] =>
 export default function Home() {
   const [songs, setSongs] = useState<any[]>([]);
   const [search, setSearch] = useState("");
+
+  // Supabase에서 관리하는 동적 카테고리
+  const [categoryList, setCategoryList] = useState<SongCategory[]>([]);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null);
+  const [categoryEditValue, setCategoryEditValue] = useState("");
+  const [savingCategory, setSavingCategory] = useState(false);
+
+  // 공지사항
+  const [notice, setNotice] = useState({ title: "노래책 필독사항", content: "노래 신청 전 필독사항을 확인해주세요!" });
+  const [noticeOpen, setNoticeOpen] = useState(false);
+  const [noticeEditing, setNoticeEditing] = useState(false);
+  const [noticeTitleDraft, setNoticeTitleDraft] = useState("");
+  const [noticeContentDraft, setNoticeContentDraft] = useState("");
+  const [noticeSaving, setNoticeSaving] = useState(false);
 
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [artistFilter, setArtistFilter] = useState<Set<string>>(new Set());
@@ -107,6 +124,170 @@ const [requestedSongIds, setRequestedSongIds] =
   const [editCategory, setEditCategory] = useState<string[]>([]);
   const [editDifficulty, setEditDifficulty] = useState<number | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // 카테고리 목록 조회
+  const fetchNotice = async () => {
+    try {
+      const response = await fetch("/api/notice", { cache: "no-store" });
+      const result = await response.json();
+      if (response.ok && result.notice) setNotice(result.notice);
+    } catch (error) { console.error("공지 조회 오류:", error); }
+  };
+
+  const saveNotice = async () => {
+    if (!noticeTitleDraft.trim() || !noticeContentDraft.trim() || noticeSaving) return;
+    setNoticeSaving(true);
+    try {
+      const response = await fetch("/api/notice", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: noticeTitleDraft.trim(), content: noticeContentDraft.trim() }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "공지 저장에 실패했습니다.");
+      setNotice(result.notice);
+      setNoticeEditing(false);
+      setNoticeOpen(true);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "공지 저장에 실패했습니다.");
+    } finally { setNoticeSaving(false); }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/categories", {
+        cache: "no-store",
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "카테고리 조회에 실패했습니다.");
+      }
+
+      setCategoryList(result.categories ?? []);
+    } catch (error) {
+      console.error("[카테고리 조회 오류]", error);
+    }
+  };
+
+  // 카테고리 추가
+  const handleAddCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name || savingCategory) return;
+
+    setSavingCategory(true);
+    try {
+      const response = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "카테고리 추가에 실패했습니다.");
+      }
+
+      setNewCategoryName("");
+      await fetchCategories();
+      alert(`'${name}' 카테고리를 추가했습니다.`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "카테고리 추가에 실패했습니다.");
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  // 카테고리 이름 변경 및 기존 노래 데이터 일괄 변경
+  const handleRenameCategory = async (oldName: string) => {
+    const newName = categoryEditValue.trim();
+    if (!newName || savingCategory) return;
+
+    if (newName === oldName) {
+      setEditingCategoryName(null);
+      setCategoryEditValue("");
+      return;
+    }
+
+    setSavingCategory(true);
+    try {
+      const response = await fetch("/api/categories", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldName, newName }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "카테고리 변경에 실패했습니다.");
+      }
+
+      setCategoryFilter((current) =>
+        current.map((item) => item === oldName ? newName : item)
+      );
+      setEditCategory((current) =>
+        current.map((item) => item === oldName ? newName : item)
+      );
+      setEditingCategoryName(null);
+      setCategoryEditValue("");
+      await fetchCategories();
+      await fetchSongsAgain();
+      alert(`'${oldName}' 카테고리를 '${newName}'(으)로 변경했습니다.`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "카테고리 변경에 실패했습니다.");
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  // 카테고리 삭제: 노래는 유지하고 해당 카테고리만 제거
+  const handleDeleteCategory = async (name: string) => {
+    if (savingCategory) return;
+
+    const confirmed = confirm(
+      `'${name}' 카테고리를 삭제할까요?\n\n기존 노래에서는 이 카테고리만 제거되며 노래 자체는 삭제되지 않습니다.`
+    );
+    if (!confirmed) return;
+
+    setSavingCategory(true);
+    try {
+      const response = await fetch("/api/categories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "카테고리 삭제에 실패했습니다.");
+      }
+
+      setCategoryFilter((current) => current.filter((item) => item !== name));
+      setEditCategory((current) => current.filter((item) => item !== name));
+      await fetchCategories();
+      await fetchSongsAgain();
+      alert(`'${name}' 카테고리를 삭제했습니다.`);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "카테고리 삭제에 실패했습니다.");
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  // 카테고리 변경 후 최신 노래 목록 다시 조회
+  const fetchSongsAgain = async () => {
+    const { data, error } = await supabase
+      .from("songs")
+      .select("*")
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.error("[노래 목록 새로고침 오류]", error);
+      return;
+    }
+
+    setSongs(data || []);
+  };
 
   // 관리자 로그인
   const handleAdminLogin = async () => {
@@ -943,6 +1124,14 @@ const logoutSoop = async () => {
     checkAdmin();
   }, []);
 
+  // 페이지 진입 시 동적 카테고리 목록 조회
+  useEffect(() => {
+    void fetchCategories();
+    void fetchNotice();
+    // 최초 진입 시 한 번만 조회
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // 노래 가져오기
   useEffect(() => {
     const fetchSongs = async () => {
@@ -1461,7 +1650,16 @@ const handleDeleteCover = async (
               <div>
          <h1 className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-[#315b49]">
   유상츄 노래책  🎙️
-
+  <button
+    type="button"
+    onClick={() => {
+      setNoticeOpen((value) => !value);
+      setNoticeEditing(false);
+    }}
+    className="rounded-full border border-[#d9e9de] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#5b9877] shadow-sm transition hover:bg-[#e8f4ec] sm:text-sm ml-3 "
+  >
+    📢 {notice.title || "노래책 공지"}
+  </button>
 </h1>
 
                 <p className="mt-0.5 text-xs text-[#718f7e]">
@@ -1565,6 +1763,30 @@ const handleDeleteCover = async (
           </div>
         </div>
       </header>
+
+      {noticeOpen && (
+        <section className="mx-auto mt-4 max-w-6xl px-4 sm:px-6">
+          <div className="rounded-2xl border border-[#cfe2d5] bg-white p-4 shadow-sm sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-bold text-[#315b49]">📢 {notice.title}</h2>
+              <div className="flex shrink-0 gap-2">
+                {isAdmin && !noticeEditing && <button type="button" onClick={() => { setNoticeTitleDraft(notice.title); setNoticeContentDraft(notice.content); setNoticeEditing(true); }} className="rounded-lg border border-[#d9e9de] px-3 py-1.5 text-xs font-semibold text-[#5b9877]">수정</button>}
+                <button type="button" onClick={() => setNoticeOpen(false)} className="rounded-lg bg-[#edf6f0] px-3 py-1.5 text-xs text-[#5b9877]">닫기 ✕</button>
+              </div>
+            </div>
+            {noticeEditing ? (
+              <div className="mt-3 space-y-3">
+                <input value={noticeTitleDraft} onChange={(e) => setNoticeTitleDraft(e.target.value)} maxLength={60} placeholder="공지 제목" className="w-full rounded-xl border border-[#d9e9de] px-3 py-2 text-sm outline-none focus:border-[#5b9877]" />
+                <textarea value={noticeContentDraft} onChange={(e) => setNoticeContentDraft(e.target.value)} rows={5} maxLength={5000} placeholder="공지 내용을 입력해주세요." className="w-full resize-y rounded-xl border border-[#d9e9de] px-3 py-2 text-sm outline-none focus:border-[#5b9877]" />
+                <div className="flex justify-end gap-2">
+                  <button type="button" onClick={() => setNoticeEditing(false)} className="rounded-lg border border-[#d9e9de] px-4 py-2 text-sm text-[#718f7e]">취소</button>
+                  <button type="button" onClick={() => void saveNotice()} disabled={noticeSaving} className="rounded-lg bg-[#5b9877] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{noticeSaving ? "저장 중..." : "저장"}</button>
+                </div>
+              </div>
+            ) : <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-7 text-[#496d56]">{notice.content}</p>}
+          </div>
+        </section>
+      )}
 
       {/* 로그인 모달 */}
       {showLogin && (
@@ -1672,11 +1894,12 @@ const handleDeleteCover = async (
                 여러 개를 선택할 수 있습니다.
               </p>
               <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((category) => {
+                {categoryList.map((categoryItem) => {
+                  const category = categoryItem.name;
                   const selected = editCategory.includes(category);
                   return (
                     <button
-                      key={category}
+                      key={categoryItem.id}
                       type="button"
                       onClick={() => toggleEditCategory(category)}
                       className={
@@ -1787,9 +2010,108 @@ const handleDeleteCover = async (
         {/* 필터 */}
         <div className="mb-8 rounded-2xl border border-[#d9e9de] bg-white p-5">
           <div>
-            <p className="mb-2 text-sm font-semibold">
-              카테고리
-            </p>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold">카테고리</p>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryManager((current) => !current)}
+                  className="rounded-lg border border-[#d9e9de] bg-[#f3faf5] px-3 py-1.5 text-xs font-medium text-[#5b9877] hover:bg-[#e8f4ec]"
+                >
+                  ⚙️ 카테고리 관리 {showCategoryManager ? "닫기" : ""}
+                </button>
+              )}
+            </div>
+
+            {showCategoryManager && isAdmin && (
+              <div className="mb-4 rounded-xl border border-[#d9e9de] bg-[#f7fbf8] p-4">
+                <p className="mb-3 text-sm font-semibold text-[#496d56]">카테고리 관리</p>
+
+                <div className="mb-4 flex gap-2">
+                  <input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void handleAddCategory();
+                      }
+                    }}
+                    placeholder="새 카테고리 이름"
+                    className="min-w-0 flex-1 rounded-lg border border-[#d9e9de] bg-white px-3 py-2 text-sm outline-none focus:border-[#5b9877]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleAddCategory()}
+                    disabled={savingCategory || !newCategoryName.trim()}
+                    className="shrink-0 rounded-lg bg-[#5b9877] px-4 py-2 text-sm font-medium text-white hover:bg-[#3e7558] disabled:opacity-50"
+                  >
+                    추가
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {categoryList.map((category) => (
+                    <div key={category.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-[#e3efe7] bg-white p-2">
+                      {editingCategoryName === category.name ? (
+                        <>
+                          <input
+                            autoFocus
+                            value={categoryEditValue}
+                            onChange={(e) => setCategoryEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") void handleRenameCategory(category.name);
+                              if (e.key === "Escape") {
+                                setEditingCategoryName(null);
+                                setCategoryEditValue("");
+                              }
+                            }}
+                            className="min-w-0 flex-1 rounded-lg border border-[#d9e9de] px-3 py-2 text-sm outline-none focus:border-[#5b9877]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleRenameCategory(category.name)}
+                            disabled={savingCategory}
+                            className="rounded-lg bg-[#5b9877] px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+                          >저장</button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCategoryName(null);
+                              setCategoryEditValue("");
+                            }}
+                            className="rounded-lg border border-[#d9e9de] px-3 py-2 text-xs text-[#718f7e]"
+                          >취소</button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="min-w-0 flex-1 px-2 text-sm font-medium text-[#496d56]">{category.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCategoryName(category.name);
+                              setCategoryEditValue(category.name);
+                            }}
+                            className="rounded-lg border border-[#d9e9de] px-3 py-2 text-xs text-[#5b9877] hover:bg-[#f3faf5]"
+                          >이름 변경</button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDeleteCategory(category.name)}
+                            disabled={savingCategory}
+                            className="rounded-lg border border-[#ead7d7] px-3 py-2 text-xs text-[#b45d5d] hover:bg-[#fff4f4] disabled:opacity-50"
+                          >삭제</button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <p className="mt-3 text-xs leading-relaxed text-[#8ba997]">
+                  이름을 변경하면 기존 노래에도 반영됩니다. 삭제하면 기존 노래에서 해당 카테고리만 제거되고 노래는 유지됩니다.
+                </p>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setCategoryFilter([])}
@@ -1798,30 +2120,22 @@ const handleDeleteCover = async (
                     ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
                     : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
                 }
-              >
-                전체
-              </button>
-              {CATEGORIES.map((category) => {
+              >전체</button>
+              {categoryList.map((categoryItem) => {
+                const category = categoryItem.name;
                 const selected = categoryFilter.includes(category);
                 return (
                   <button
-                    key={category}
-                    onClick={() =>
-                      setCategoryFilter((prev) =>
-                        selected
-                          ? prev.filter((item) => item !== category)
-                          : [...prev, category]
-                      )
-                    }
+                    key={categoryItem.id}
+                    onClick={() => setCategoryFilter((prev) =>
+                      selected ? prev.filter((item) => item !== category) : [...prev, category]
+                    )}
                     className={
                       selected
                         ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
                         : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
                     }
-                  >
-                    {selected && "✓ "}
-                    {category}
-                  </button>
+                  >{selected && "✓ "}{category}</button>
                 );
               })}
             </div>

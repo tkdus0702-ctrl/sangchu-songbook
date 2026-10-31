@@ -49,6 +49,7 @@ export default function QueuePanel({ songs, isAdmin }: Props) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const [requests, setRequests] = useState<SongRequest[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(true);
@@ -544,34 +545,62 @@ useEffect(() => {
 return (
   <section
     id="song-queue"
-    className="fixed bottom-4 right-4 z-50 flex max-h-[70dvh] w-[calc(100vw-2rem)] max-w-[420px] flex-col overflow-hidden rounded-2xl border border-[#d9e9de] bg-[#f3faf5] p-4 shadow-2xl sm:bottom-6 sm:right-6 sm:max-h-[75dvh] sm:p-5"
+    className={
+      isCollapsed
+        ? "fixed bottom-4 right-4 z-50 flex h-16 w-16 items-center justify-center rounded-full border border-[#c2d9c9] bg-[#f3faf5] shadow-2xl sm:bottom-6 sm:right-6"
+        : "fixed bottom-3 right-3 z-50 flex max-h-[62dvh] w-[calc(100vw-1.5rem)] max-w-[380px] flex-col overflow-hidden rounded-2xl border border-[#d9e9de] bg-[#f3faf5] p-3 shadow-2xl sm:bottom-6 sm:right-6 sm:max-h-[75dvh] sm:max-w-[420px] sm:p-5"
+    }
   >
-    {/* 제목 영역: 항상 표시 */}
-    <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
-      <div>
+    {isCollapsed ? (
+      <button
+        type="button"
+        onClick={() => setIsCollapsed(false)}
+        aria-label="대기열 펼치기"
+        title="대기열 펼치기"
+        className="flex h-full w-full flex-col items-center justify-center gap-0.5 rounded-full text-[#5b9877] transition hover:bg-[#e3efe7]"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M8 6h13M8 12h13M8 18h13" />
+          <path d="M3 6h.01M3 12h.01M3 18h.01" />
+        </svg>
+        <span className="text-[9px] font-extrabold tracking-wider">QUEUE</span>
+      </button>
+    ) : (
+      <>
+    {/* 제목 영역 */}
+    <div className="flex shrink-0 items-start justify-between gap-3">
+      <div className="min-w-0">
         <p className="text-xs font-semibold tracking-[0.18em] text-[#789786]">
           SANGCHU PLAY QUEUE
         </p>
-<h2 className="mt-1 flex items-center gap-2 text-xl font-bold text-[#789d64]">
-  유상츄 노래 대기열
-  <img
-    src="/overlay/title.svg"
-    alt="로고"
-    width={28}
-    height={28}
-    className="queue-title-logo"
-  />
-</h2>
+        <h2 className="mt-1 text-xl font-bold text-[#263c32]">
+          🎶 오늘의 노래 Queue
+        </h2>
+        <p className="mt-1 text-sm text-[#718f7e]">
+          유상츄 노래 대기열
+        </p>
       </div>
 
-      <div className="flex gap-2">
-        <span className="rounded-full bg-white px-3 py-1.5 text-sm text-[#5b9877]">
-          대기 {activeQueue.length}곡
-        </span>
-        <span className="rounded-full bg-white px-3 py-1.5 text-sm text-[#718f7e]">
-          완료 {completedQueue.length}곡
-        </span>
-      </div>
+      <button
+        type="button"
+        onClick={() => setIsCollapsed(true)}
+        aria-label="대기열 접기"
+        title="대기열 접기"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#63816d] transition hover:bg-[#dceee1] hover:text-[#34734f]"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+    </div>
+
+    <div className="mt-2 flex shrink-0 items-center gap-2">
+      <span className="rounded-full bg-white px-3 py-1.5 text-sm text-[#5b9877]">
+        대기 {activeQueue.length}곡
+      </span>
+      <span className="rounded-full bg-white px-3 py-1.5 text-sm text-[#718f7e]">
+        완료 {completedQueue.length}곡
+      </span>
     </div>
 
     {/* 이 영역만 스크롤 */}
@@ -744,6 +773,8 @@ return (
         </p>
       )}
     </div>
+      </>
+    )}
   </section>
 );
 
