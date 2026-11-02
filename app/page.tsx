@@ -197,7 +197,43 @@ const [requestedSongIds, setRequestedSongIds] =
       setSavingCategory(false);
     }
   };
+// 카테고리 순서 변경
+const handleMoveCategory = async (
+  id: number,
+  direction: "up" | "down"
+) => {
+  if (savingCategory) return;
 
+  setSavingCategory(true);
+
+  try {
+    const response = await fetch("/api/categories", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id, direction }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
+      throw new Error(
+        result.message || "카테고리 순서 변경에 실패했습니다."
+      );
+    }
+
+    await fetchCategories();
+  } catch (error) {
+    alert(
+      error instanceof Error
+        ? error.message
+        : "카테고리 순서 변경에 실패했습니다."
+    );
+  } finally {
+    setSavingCategory(false);
+  }
+};
   // 카테고리 이름 변경 및 기존 노래 데이터 일괄 변경
   const handleRenameCategory = async (oldName: string) => {
     const newName = categoryEditValue.trim();
@@ -1488,7 +1524,19 @@ const handleDeleteCover = async (
       );
     }
   };
+  // 카테고리별 등록 곡 수 계산
+  const categorySongCounts = new Map<string, number>();
 
+  songs.forEach((song) => {
+    const songCategories = parseCategories(song.category);
+
+    songCategories.forEach((category) => {
+      categorySongCounts.set(
+        category,
+        (categorySongCounts.get(category) ?? 0) + 1
+      );
+    });
+  });
   // 등록된 곡 수가 많은 가수부터 정렬하고, 곡 수가 같으면 가나다/알파벳순 정렬
   const artistSongCounts = new Map<string, number>();
 
@@ -1534,11 +1582,13 @@ const handleDeleteCover = async (
         artist.includes(keyword);
 
       const songCategories = parseCategories(song.category);
-      // 선택한 카테고리 집합과 노래에 저장된 카테고리 집합이 정확히 같을 때만 표시
-      const matchesCategory =
-        categoryFilter.length === 0 ||
-        (songCategories.length === categoryFilter.length &&
-          categoryFilter.every((category) => songCategories.includes(category)));
+
+// 선택한 카테고리를 모두 포함하면 표시 (추가 카테고리는 허용)
+const matchesCategory =
+  categoryFilter.length === 0 ||
+  categoryFilter.every((category) =>
+    songCategories.includes(category)
+  );
 
       const matchesArtist =
         artistFilter.size === 0 ||
@@ -1632,14 +1682,14 @@ const handleDeleteCover = async (
       {/* 헤더 */}
       <header className="border-b border-[#d9e9de] bg-[#f3faf5]">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-          <button
+          <div
             onClick={() =>
               window.scrollTo({
                 top: 0,
                 behavior: "smooth",
               })
             }
-            className="group text-left"
+            className="group text-left cursor-pointer"
           >
            <div className="flex items-center gap-0">
   <img
@@ -1652,7 +1702,8 @@ const handleDeleteCover = async (
   유상츄 노래책  🎙️
   <button
     type="button"
-    onClick={() => {
+    onClick={(event) => {
+      event.stopPropagation();
       setNoticeOpen((value) => !value);
       setNoticeEditing(false);
     }}
@@ -1667,7 +1718,7 @@ const handleDeleteCover = async (
                 </p>
               </div>
             </div>
-          </button>
+          </div>
 
           <div className="flex items-center gap-2">
             {!isAdmin && (
@@ -2050,61 +2101,110 @@ const handleDeleteCover = async (
                   </button>
                 </div>
 
-                <div className="space-y-2">
-                  {categoryList.map((category) => (
-                    <div key={category.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-[#e3efe7] bg-white p-2">
-                      {editingCategoryName === category.name ? (
-                        <>
-                          <input
-                            autoFocus
-                            value={categoryEditValue}
-                            onChange={(e) => setCategoryEditValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") void handleRenameCategory(category.name);
-                              if (e.key === "Escape") {
-                                setEditingCategoryName(null);
-                                setCategoryEditValue("");
-                              }
-                            }}
-                            className="min-w-0 flex-1 rounded-lg border border-[#d9e9de] px-3 py-2 text-sm outline-none focus:border-[#5b9877]"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => void handleRenameCategory(category.name)}
-                            disabled={savingCategory}
-                            className="rounded-lg bg-[#5b9877] px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
-                          >저장</button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingCategoryName(null);
-                              setCategoryEditValue("");
-                            }}
-                            className="rounded-lg border border-[#d9e9de] px-3 py-2 text-xs text-[#718f7e]"
-                          >취소</button>
-                        </>
-                      ) : (
-                        <>
-                          <span className="min-w-0 flex-1 px-2 text-sm font-medium text-[#496d56]">{category.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingCategoryName(category.name);
-                              setCategoryEditValue(category.name);
-                            }}
-                            className="rounded-lg border border-[#d9e9de] px-3 py-2 text-xs text-[#5b9877] hover:bg-[#f3faf5]"
-                          >이름 변경</button>
-                          <button
-                            type="button"
-                            onClick={() => void handleDeleteCategory(category.name)}
-                            disabled={savingCategory}
-                            className="rounded-lg border border-[#ead7d7] px-3 py-2 text-xs text-[#b45d5d] hover:bg-[#fff4f4] disabled:opacity-50"
-                          >삭제</button>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
+               <div className="space-y-2">
+  {categoryList.map((category, index) => (
+    <div
+      key={category.id}
+      className="flex flex-wrap items-center gap-2 rounded-lg border border-[#e3efe7] bg-white p-2"
+    >
+      {editingCategoryName === category.name ? (
+        <>
+          <input
+            autoFocus
+            value={categoryEditValue}
+            onChange={(e) => setCategoryEditValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                void handleRenameCategory(category.name);
+              }
+
+              if (e.key === "Escape") {
+                setEditingCategoryName(null);
+                setCategoryEditValue("");
+              }
+            }}
+            className="min-w-0 flex-1 rounded-lg border border-[#d9e9de] px-3 py-2 text-sm outline-none focus:border-[#5b9877]"
+          />
+
+          <button
+            type="button"
+            onClick={() => void handleRenameCategory(category.name)}
+            disabled={savingCategory}
+            className="rounded-lg bg-[#5b9877] px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+          >
+            저장
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEditingCategoryName(null);
+              setCategoryEditValue("");
+            }}
+            className="rounded-lg border border-[#d9e9de] px-3 py-2 text-xs text-[#718f7e]"
+          >
+            취소
+          </button>
+        </>
+      ) : (
+        <>
+          <span className="min-w-0 flex-1 px-2 text-sm font-medium text-[#496d56]">
+            {category.name}
+          </span>
+
+          {/* 위로 이동 */}
+          <button
+            type="button"
+            onClick={() =>
+              void handleMoveCategory(category.id, "up")
+            }
+            disabled={savingCategory || index === 0}
+            className="rounded-lg border border-[#d9e9de] px-3 py-2 text-sm text-[#5b9877] hover:bg-[#f3faf5] disabled:cursor-not-allowed disabled:opacity-30"
+            title="위로 이동"
+          >
+            ▲
+          </button>
+
+          {/* 아래로 이동 */}
+          <button
+            type="button"
+            onClick={() =>
+              void handleMoveCategory(category.id, "down")
+            }
+            disabled={
+              savingCategory || index === categoryList.length - 1
+            }
+            className="rounded-lg border border-[#d9e9de] px-3 py-2 text-sm text-[#5b9877] hover:bg-[#f3faf5] disabled:cursor-not-allowed disabled:opacity-30"
+            title="아래로 이동"
+          >
+            ▼
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setEditingCategoryName(category.name);
+              setCategoryEditValue(category.name);
+            }}
+            disabled={savingCategory}
+            className="rounded-lg border border-[#d9e9de] px-3 py-2 text-xs text-[#5b9877] hover:bg-[#f3faf5] disabled:opacity-50"
+          >
+            이름 변경
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void handleDeleteCategory(category.name)}
+            disabled={savingCategory}
+            className="rounded-lg border border-[#ead7d7] px-3 py-2 text-xs text-[#b45d5d] hover:bg-[#fff4f4] disabled:opacity-50"
+          >
+            삭제
+          </button>
+        </>
+      )}
+    </div>
+  ))}
+</div>
 
                 <p className="mt-3 text-xs leading-relaxed text-[#8ba997]">
                   이름을 변경하면 기존 노래에도 반영됩니다. 삭제하면 기존 노래에서 해당 카테고리만 제거되고 노래는 유지됩니다.
@@ -2135,13 +2235,16 @@ const handleDeleteCover = async (
                         ? "rounded-full bg-[#5b9877] px-4 py-2 text-sm text-white"
                         : "rounded-full border border-[#d9e9de] bg-white px-4 py-2 text-sm text-[#496d56] hover:bg-[#f3faf5]"
                     }
-                  >{selected && "✓ "}{category}</button>
+                  >
+  {selected && "✓ "}
+  {category} ({categorySongCounts.get(category) ?? 0})
+</button>
                 );
               })}
             </div>
             {categoryFilter.length > 0 && (
               <p className="mt-2 text-xs text-[#718f7e]">
-                선택한 카테고리 구성과 정확히 일치하는 노래만 표시합니다.
+                선택한 카테고리를 모두 포함하는 노래를 표시합니다.
               </p>
             )}
           </div>

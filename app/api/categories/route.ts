@@ -183,3 +183,63 @@ export async function DELETE(request: Request) {
     );
   }
 }
+// 카테고리 순서 변경
+export async function PUT(request: Request) {
+  if (!(await isAdmin())) {
+    return NextResponse.json(
+      { success: false, message: "관리자 권한이 필요합니다." },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const body = await request.json();
+    const id = Number(body.id);
+    const direction = body.direction;
+
+    if (!Number.isInteger(id) || !["up", "down"].includes(direction)) {
+      return NextResponse.json(
+        { success: false, message: "잘못된 순서 변경 요청입니다." },
+        { status: 400 }
+      );
+    }
+
+    // 데이터베이스에서 원자적으로 순서 변경
+    const { error: moveError } = await supabaseAdmin.rpc(
+      "move_song_category",
+      {
+        p_category_id: id,
+        p_direction: direction,
+      }
+    );
+
+    if (moveError) throw moveError;
+
+    // 변경된 목록 다시 조회
+    const { data: categories, error: fetchError } = await supabaseAdmin
+      .from("song_categories")
+      .select("id, name, position")
+      .order("position", { ascending: true })
+      .order("name", { ascending: true });
+
+    if (fetchError) throw fetchError;
+
+    return NextResponse.json({
+      success: true,
+      categories: categories ?? [],
+    });
+  } catch (error) {
+    console.error("[카테고리 순서 변경 오류]", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : "카테고리 순서를 변경하지 못했습니다.",
+      },
+      { status: 500 }
+    );
+  }
+}
