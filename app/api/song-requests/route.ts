@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdmin } from "@/lib/admin";
@@ -63,6 +64,40 @@ export async function POST(request: Request) {
     );
   }
 
+  // 실제 노래책의 카테고리 확인
+  const { data: song, error: songError } = await supabaseAdmin
+    .from("songs")
+    .select("id, category")
+    .eq("id", songId)
+    .maybeSingle();
+
+  if (songError) {
+    console.error("노래 카테고리 확인 오류:", songError);
+    return NextResponse.json(
+      { message: "노래 정보를 확인하지 못했습니다." },
+      { status: 500 }
+    );
+  }
+
+  if (!song) {
+    return NextResponse.json(
+      { message: "노래책에서 해당 노래를 찾을 수 없습니다." },
+      { status: 404 }
+    );
+  }
+
+  // 애교송은 웹사이트 방문자 요청 차단
+  const categories = String(song.category ?? "")
+    .split(",")
+    .map((category: string) => category.trim());
+
+  if (categories.includes("애교송")) {
+    return NextResponse.json(
+      { message: "애교송은 노래책에서 신청할 수 없습니다." },
+      { status: 403 }
+    );
+  }
+
   // 같은 방문자가 동일 곡을 여러 번 대기 요청하지 못하게 함
   const { data: existing, error: lookupError } = await supabaseAdmin
     .from("song_requests")
@@ -96,9 +131,12 @@ export async function POST(request: Request) {
       song_key: body.key ? String(body.key).slice(0, 50) : null,
       level: body.level ? String(body.level).slice(0, 50) : null,
       category: body.category ? String(body.category).slice(0, 50) : null,
-      difficulty: Number.isInteger(body.difficulty) && body.difficulty >= 1 && body.difficulty <= 5
-        ? body.difficulty
-        : null,
+      difficulty:
+        Number.isInteger(body.difficulty) &&
+        body.difficulty >= 1 &&
+        body.difficulty <= 5
+          ? body.difficulty
+          : null,
       requester_id: requesterId,
       status: "pending",
     })
@@ -146,7 +184,11 @@ export async function PATCH(request: Request) {
   const id = Number(body.id);
   const status = body.status;
 
-  if (!Number.isInteger(id) || id <= 0 || !["added", "rejected"].includes(status)) {
+  if (
+    !Number.isInteger(id) ||
+    id <= 0 ||
+    !["added", "rejected"].includes(status)
+  ) {
     return NextResponse.json(
       { message: "요청 정보가 올바르지 않습니다." },
       { status: 400 }
