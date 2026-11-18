@@ -25,10 +25,7 @@ export async function GET() {
 
   const authUrl = new URL("https://openapi.sooplive.com/auth/code");
   authUrl.searchParams.set("client_id", clientId);
-  authUrl.searchParams.set(
-  "scope",
-  "broad_access_chatinfo validate_live_status"
-);
+  authUrl.searchParams.set("scope", "broad_access_chatinfo");
 
   return NextResponse.redirect(authUrl);
 }
